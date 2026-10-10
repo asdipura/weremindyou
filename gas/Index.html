@@ -39,6 +39,7 @@
       --cork-flecks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .8 0 0 0 0 .6 0 0 0 4 -2.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
@@ -310,8 +311,119 @@
     .site-foot { background: #1b1b1b; color: #e9e9e9; padding: 20px 16px; text-align: center; font: 400 14px/1.6 "Instrument Serif", serif; }
     .site-foot span { display: inline-block; margin: 0 10px; font-size: 18px; }
 
-    /* Halaman unggah sementara (batch 3) */
-    .upload-view { padding: 32px 0 64px; }
+    /* ───────── Form unggah: kertas di papan jepit ───────── */
+    .upload-view { position: relative; padding: 20px 0 64px; min-height: 100vh; }
+    .upload-view::before { content: ""; position: absolute; inset: 0; background: var(--grain); mix-blend-mode: overlay; opacity: .35; pointer-events: none; }
+    .wrap--form { width: min(640px, 100% - 24px); }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-bottom: 18px; padding: 0 12px 0 8px;
+      border: 0; border-radius: 4px; background: transparent; cursor: pointer;
+      font: 600 15px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink);
+    }
+    .back-link svg { width: 20px; height: 20px; }
+    @media (hover: hover) { .back-link:hover { background: rgba(0,0,0,.08); } }
+    .clipboard {
+      position: relative; padding: 34px 12px 12px; border-radius: 10px;
+      background: linear-gradient(160deg, #a77a4c, #8a5f36 60%, #7a5230);
+      box-shadow: 0 14px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.25);
+    }
+    .clipboard__clip {
+      position: absolute; top: -14px; left: 50%; width: 150px; height: 46px; margin-left: -75px; z-index: 3; border-radius: 8px 8px 14px 14px;
+      background: linear-gradient(180deg, #f1f3f3, #b4b9b9 55%, #8e9393);
+      box-shadow: 0 4px 8px rgba(0,0,0,.45), inset 0 1px 0 #fff;
+    }
+    .clipboard__clip::after { content: ""; position: absolute; left: 50%; top: 9px; width: 40px; height: 12px; margin-left: -20px; border-radius: 6px; background: #6c7171; box-shadow: inset 0 2px 3px rgba(0,0,0,.6); }
+    .sheet { padding: clamp(20px, 5vw, 36px); background: linear-gradient(180deg, var(--paper), #f0ede4); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    .sheet > * { position: relative; z-index: 2; }
+    .sheet__title { margin: 8px 0 6px; font: 400 clamp(40px, 9vw, 56px) / 1 "Instrument Serif", serif; outline: none; }
+    .sheet__title i { font-style: italic; }
+    .sheet__lead { margin: 0 0 24px; color: var(--ink-2); font-size: 15px; }
+    .form-loading { padding: 24px 0; color: var(--ink-2); }
+
+    .field { margin: 0 0 22px; padding: 0; border: 0; min-width: 0; }
+    .field__label { display: block; margin-bottom: 8px; padding: 0; font: 600 15px/1.3 "Plus Jakarta Sans", sans-serif; color: var(--ink); }
+    .field__hint { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); }
+    .field__hint:empty, .field__error:empty { display: none; }
+    .field__error { margin: 6px 0 0; font: 600 13px/1.4 "Plus Jakarta Sans", sans-serif; color: #b3261e; }
+    .input {
+      display: block; width: 100%; min-height: 48px; padding: 10px 12px; border-radius: 4px;
+      border: 1.5px solid #8e8a7e; background: #fffdf8; color: var(--ink);
+      font: 400 16px/1.4 "Plus Jakarta Sans", sans-serif;
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+    }
+    select.input { appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231d1d1b' stroke-width='2.2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 18px; }
+    textarea.input { resize: vertical; min-height: 84px; }
+    .input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(3,129,185,.25); }
+    .input:disabled { background-color: #ece9e1; color: var(--ink-3); cursor: not-allowed; }
+    .input[aria-invalid="true"] { border-color: #b3261e; }
+    .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+    .choices .chip span { min-width: 48px; justify-content: center; }
+    .chip input:disabled + span { opacity: .45; cursor: not-allowed; }
+    .chip input:disabled { cursor: not-allowed; }
+
+    .task-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 14px; }
+    .task-edit { padding: 14px; border: 1.5px dashed #bdb8aa; border-radius: 4px; background: rgba(255,255,255,.55); }
+    .task-edit.is-saved { border-style: solid; border-color: #9fc3d4; background: rgba(3,129,185,.05); }
+    .task-edit__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .task-edit__title { font: 400 24px/1 "Instrument Serif", serif; color: var(--blue-ink); }
+    .task-edit__badge { margin-left: 8px; font: 600 11px/1 "Plus Jakarta Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+    .task-edit .field { margin-bottom: 12px; }
+    .task-edit .field:last-child { margin-bottom: 0; }
+    .counter { float: right; margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+    .icon-btn {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 4px;
+      background: transparent; color: #8c1d18; font: 600 13px/1 "Plus Jakarta Sans", sans-serif; cursor: pointer;
+    }
+    .icon-btn svg { width: 18px; height: 18px; }
+    @media (hover: hover) { .icon-btn:hover { background: rgba(179,38,30,.08); } }
+    .add-task { gap: 6px; min-height: 44px; margin-bottom: 24px; }
+    .add-task svg { width: 18px; height: 18px; }
+
+    .callout { margin: 0 0 22px; padding: 14px 16px; border-left: 5px solid #d9a400; background: #fff4c2; box-shadow: 1px 2px 4px rgba(0,0,0,.12); }
+    .callout--info { border-color: var(--stamp); background: #e7f2ea; }
+    .callout--error { border-color: #b3261e; background: #fbe9e7; }
+    .callout h3 { margin: 0 0 6px; font: 600 16px/1.35 "Plus Jakarta Sans", sans-serif; }
+    .callout p { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); }
+    .callout ul { margin: 0 0 12px; padding-left: 18px; font-size: 14px; }
+    .callout li + li { margin-top: 4px; }
+    .callout__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .callout .link-btn { min-height: 40px; background: #fffdf8; }
+    .callout .link-btn[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    .btn-primary {
+      position: relative; display: inline-grid; place-items: center; width: 100%; min-height: 56px; padding: 0 24px;
+      border: 0; border-radius: 4px; cursor: pointer; color: #fff;
+      background: var(--blue); box-shadow: 0 0 0 4px rgba(255,255,255,.5), 3px 5px 10px rgba(0,0,0,.35);
+      font: 700 18px/1 "Poppins", sans-serif; letter-spacing: .04em; text-transform: uppercase;
+      transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), background-color var(--t-base);
+    }
+    .btn-primary__label { position: relative; z-index: 2; }
+    @media (hover: hover) { .btn-primary:hover { background: var(--blue-hover); transform: translateY(-1px); } }
+    .btn-primary:active { background: var(--blue-press); transform: translateY(1px); box-shadow: 0 0 0 4px rgba(255,255,255,.5), inset 0 3px 8px rgba(0,0,0,.35); }
+    .btn-primary[aria-busy="true"] { cursor: progress; background: var(--blue-press); }
+    .btn-primary:focus-visible { outline-offset: 6px; }
+    .btn-danger {
+      min-height: 44px; padding: 0 16px; border: 0; border-radius: 4px; cursor: pointer;
+      background: #b3261e; color: #fff; font: 600 14px/1 "Plus Jakarta Sans", sans-serif;
+    }
+    @media (hover: hover) { .btn-danger:hover { background: #9a1f18; } }
+
+    .done { display: grid; gap: 10px; justify-items: start; outline: none; }
+    .done h3 { margin: 6px 0 0; font: 400 32px/1.1 "Instrument Serif", serif; }
+    .done p { margin: 0; color: var(--ink-2); }
+    .done__actions { display: grid; gap: 10px; width: 100%; margin-top: 10px; }
+    .done__actions .link-btn { justify-content: center; min-height: 44px; }
+    .stamp--big { font-size: 20px; padding: 6px 14px; border-width: 3px; }
+
+    .confirm { width: min(440px, 100% - 32px); padding: 0; border: 0; background: transparent; }
+    .confirm::backdrop { background: rgba(20,20,18,.55); }
+    .confirm .sheet { box-shadow: 0 16px 40px rgba(0,0,0,.45); }
+    .confirm h3 { margin: 0 0 8px; font: 400 30px/1.1 "Instrument Serif", serif; }
+    .confirm p { margin: 0 0 20px; color: var(--ink-2); overflow-wrap: anywhere; }
+    .confirm__actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .confirm__actions .link-btn { min-height: 44px; padding: 0 16px; }
+
+    body.is-form .hero, body.is-form .upload-band { display: none; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: 0ms !important; animation: none !important; }
@@ -376,14 +488,103 @@
     </section>
 
     <section class="upload-view" id="uploadView" hidden aria-labelledby="uploadTitle">
-      <div class="wrap">
-        <div class="notice">
-          <h3 id="uploadTitle">Form unggah tugas</h3>
-          <p id="uploadInfo">Form unggah sedang dibangun (batch 3).</p>
-          <button class="link-btn" type="button" id="backToBoard">Kembali ke papan tugas</button>
+      <div class="wrap wrap--form">
+        <button class="back-link" type="button" id="backToBoard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          Papan tugas
+        </button>
+        <div class="clipboard">
+          <span class="clipboard__clip" aria-hidden="true"></span>
+          <div class="sheet grain">
+            <h2 class="sheet__title" id="uploadTitle" tabindex="-1">Upload <i>tugas</i></h2>
+            <p class="sheet__lead">Laporkan tugas kelasmu minggu ini. Tugas langsung tampil di papan dan masuk slide WRY setelah Jumat 23.59.</p>
+
+            <div id="formAlert"></div>
+            <div id="formLoading" class="form-loading" hidden>Memuat form…</div>
+
+            <form id="uploadForm" novalidate hidden autocomplete="off">
+              <div class="field">
+                <label class="field__label" for="fWeek">Minggu</label>
+                <select class="input" id="fWeek"></select>
+                <p class="field__hint" id="fWeekHint"></p>
+              </div>
+
+              <fieldset class="field">
+                <legend class="field__label">Semester</legend>
+                <div class="choices" id="fSemester"></div>
+                <p class="field__error" id="eSemester"></p>
+              </fieldset>
+
+              <fieldset class="field" id="kelasField">
+                <legend class="field__label">Kelas</legend>
+                <div class="choices" id="fKelas"></div>
+                <p class="field__hint" id="fKelasHint">Pilih semester dulu.</p>
+                <p class="field__error" id="eKelas"></p>
+              </fieldset>
+
+              <div class="field">
+                <label class="field__label" for="fMatkul">Mata kuliah</label>
+                <select class="input" id="fMatkul" disabled aria-describedby="eMatkul"></select>
+                <p class="field__error" id="eMatkul"></p>
+              </div>
+
+              <div id="existing" aria-live="polite"></div>
+
+              <div id="reportArea" hidden>
+                <fieldset class="field">
+                  <legend class="field__label">Minggu ini ada tugas?</legend>
+                  <div class="choices">
+                    <label class="chip"><input type="radio" name="mode" value="ada" checked><span>Ada tugas</span></label>
+                    <label class="chip"><input type="radio" name="mode" value="tidak-ada" id="modeNone"><span>Tidak ada tugas</span></label>
+                  </div>
+                  <p class="field__hint" id="modeHint"></p>
+                </fieldset>
+
+                <div id="taskArea">
+                  <ol class="task-list" id="taskList"></ol>
+                  <button class="link-btn add-task" type="button" id="addTask">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Tambah tugas lain
+                  </button>
+                </div>
+
+                <div class="field">
+                  <label class="field__label" for="fName">Nama pengisi</label>
+                  <input class="input" id="fName" name="name" autocomplete="name" maxlength="60" aria-describedby="fNameHint eName">
+                  <p class="field__hint" id="fNameHint">Tercatat di riwayat perubahan.</p>
+                  <p class="field__error" id="eName"></p>
+                </div>
+
+                <button class="btn-primary grain" type="submit" id="submitBtn">
+                  <span class="btn-primary__label">Simpan tugas</span>
+                </button>
+              </div>
+            </form>
+
+            <div id="uploadDone" class="done" hidden tabindex="-1">
+              <span class="stamp stamp--big">TERSIMPAN</span>
+              <h3 id="doneTitle"></h3>
+              <p id="doneText"></p>
+              <div class="done__actions">
+                <button class="btn-primary grain" type="button" id="doneBoard"><span class="btn-primary__label">Lihat di papan</span></button>
+                <button class="link-btn" type="button" id="doneAgain">Upload tugas lain</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
+
+    <dialog class="confirm" id="confirmDlg" aria-labelledby="confirmTitle">
+      <form method="dialog" class="sheet grain">
+        <h3 id="confirmTitle">Hapus tugas ini?</h3>
+        <p id="confirmText"></p>
+        <div class="confirm__actions">
+          <button class="link-btn" value="cancel" type="submit">Batal</button>
+          <button class="btn-danger" value="ok" type="submit" id="confirmOk">Hapus tugas</button>
+        </div>
+      </form>
+    </dialog>
   </main>
 
   <footer class="site-foot">
@@ -546,7 +747,7 @@
         if (!reported) body.append(el("div", { class: "notice board-empty grain" }, [
           el("h3", { text: "Belum ada laporan minggu " + d.week }),
           el("p", { text: "Perwakilan kelas bisa mulai mengunggah tugas. Pilih kelasmu di bawah, atau tekan tombol berikut." }),
-          el("a", { class: "link-btn", href: "#unggah", text: "Upload tugas", onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah" }); } }),
+          el("a", { class: "link-btn", href: "#unggah", text: "Upload tugas", onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah", prefill: { week: d.week } }); } }),
         ]));
         list.forEach((s) => body.append(panel(s, d)));
       }
@@ -576,7 +777,7 @@
           empty.forEach((c) => row.append(el("a", {
             class: "slot", href: "#unggah",
             "aria-label": "Isi tugas " + g.name + " kelas " + c.kelas,
-            onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah", prefill: { semester: s.semester, matkul: g.name, kelas: c.kelas } }); },
+            onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah", prefill: { week: d.week, semester: s.semester, matkul: g.name, kelas: c.kelas } }); },
             html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
           }, [document.createTextNode("Kelas " + c.kelas)])));
           node.append(row);
@@ -599,7 +800,7 @@
           el("div", { class: "card__foot" }, [
             el("span", { text: "oleh " + latest.pengisi + " · " + ago(latest.diubah) }),
             el("a", { class: "link-btn", href: "#unggah", text: "Edit", "aria-label": "Edit tugas " + g.name + " kelas " + c.kelas,
-              onclick: (e) => { e.preventDefault(); go({ week: state.week, view: "unggah", prefill: { semester: s.semester, matkul: g.name, kelas: c.kelas } }); } }),
+              onclick: (e) => { e.preventDefault(); go({ week: state.week, view: "unggah", prefill: { week: state.week, semester: s.semester, matkul: g.name, kelas: c.kelas, intent: "edit" } }); } }),
           ]),
         ]);
       }
@@ -675,9 +876,407 @@
         }
       }
 
+      // ───── Form unggah ─────
+      const DAY_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+      const FORM_KEY = "wry.form";
+      const MAX_TASKS = 10, MAX_DESC = 160;
+      const F = {
+        options: null, week: null, semester: null, kelas: null, matkul: null, mode: "ada",
+        existing: [], // null = gagal dicek
+        choice: null, // "edit" | "new" saat slot sudah punya tugas
+        tasks: [], nameTouched: false, checkSeq: 0, saving: false, autoEdit: false,
+      };
+      let taskSeq = 0;
+
+      function remembered() { try { return JSON.parse(localStorage.getItem(FORM_KEY)) || {}; } catch (_) { return {}; } }
+      function remember(patch) { try { localStorage.setItem(FORM_KEY, JSON.stringify(Object.assign(remembered(), patch))); } catch (_) { /* abaikan */ } }
+
+      const newTask = () => ({ key: ++taskSeq, id: "", deskripsi: "", deadline: defaultDeadline(), deadlineTouched: false, touched: {} });
+      const weekInfo = (w) => F.options.weeks.find((x) => x.week === w);
+      const slotReady = () => !!(F.semester && F.kelas && F.matkul);
+      const currentSlot = () => F.options.matkul.find((m) => m.semester === F.semester && m.kelas === F.kelas && m.matkul === F.matkul);
+      const activeExisting = () => (F.existing || []).filter((t) => t.status === "ada");
+      function defaultDeadline() {
+        const s = F.options && currentSlot(), wi = F.options && weekInfo(F.week);
+        return s && wi ? addDays(wi.end, 3 + DAY_ORDER.indexOf(s.hari)) : "";
+      }
+
+      async function openForm(prefill) {
+        $("uploadDone").hidden = true;
+        $("formAlert").textContent = "";
+        if (!F.options) {
+          $("uploadForm").hidden = true;
+          const slow = setTimeout(() => { $("formLoading").hidden = false; }, 200);
+          try {
+            F.options = await call("getFormOptions");
+          } catch (err) {
+            showFormAlert("error", "Form belum bisa dimuat", "Periksa koneksi internet, lalu coba lagi. (" + err.message + ")", () => openForm(prefill));
+            return;
+          } finally {
+            clearTimeout(slow);
+            $("formLoading").hidden = true;
+          }
+        }
+        if (!F.options.accepting) {
+          $("uploadForm").hidden = true;
+          showFormAlert("info", "Form unggah sedang ditutup", "Admin WRY menutup form untuk sementara. Papan tugas tetap bisa dilihat.");
+          return;
+        }
+        const p = prefill || {};
+        const mem = remembered();
+        const week = Number(p.week) || F.week || F.options.currentWeek;
+        F.week = weekInfo(week) ? week : F.options.currentWeek;
+        if (p.semester) {
+          F.semester = Number(p.semester); F.kelas = p.kelas; F.matkul = p.matkul; F.tasks = [];
+        } else if (!F.semester) {
+          F.semester = Number(mem.semester) || null;
+          F.kelas = mem.kelas || null;
+        }
+        F.autoEdit = p.intent === "edit";
+        if (!$("fName").value) $("fName").value = mem.name || "";
+        $("uploadForm").hidden = false;
+        renderWeekSelect(); renderSemester(); renderKelas(); renderMatkul();
+        await onSlotChange();
+      }
+
+      function renderWeekSelect() {
+        const sel = $("fWeek");
+        sel.textContent = "";
+        F.options.weeks.slice().reverse().forEach((w) => {
+          const label = "Minggu " + w.week + " · " + shortDate(w.start) + " – " + shortDate(w.end) + (w.week === F.options.currentWeek ? " (minggu ini)" : "");
+          sel.append(el("option", { value: w.week, text: label }));
+        });
+        sel.value = String(F.week);
+        const wi = weekInfo(F.week);
+        $("fWeekHint").textContent = "Deadline default jatuh di " + shortDate(addDays(wi.end, 3)) + " – " + shortDate(addDays(wi.end, 7)) + ", sesuai hari kuliah kelas.";
+      }
+
+      function radioChips(host, name, values, current, label, onPick) {
+        host.textContent = "";
+        values.forEach((v) => {
+          const input = el("input", { type: "radio", name: name, value: v });
+          input.checked = String(v) === String(current);
+          input.addEventListener("change", () => onPick(v));
+          host.append(el("label", { class: "chip" }, [input, el("span", { text: label(v) })]));
+        });
+      }
+
+      function renderSemester() {
+        const values = [...new Set(F.options.matkul.map((m) => m.semester))].sort((a, b) => a - b);
+        if (!values.includes(F.semester)) F.semester = null;
+        radioChips($("fSemester"), "fsem", values, F.semester, (v) => String(v), (v) => {
+          F.semester = v; $("eSemester").textContent = "";
+          renderKelas(); renderMatkul(); onSlotChange();
+        });
+      }
+
+      function renderKelas() {
+        const values = F.semester ? [...new Set(F.options.matkul.filter((m) => m.semester === F.semester).map((m) => m.kelas))].sort() : [];
+        if (!values.includes(F.kelas)) F.kelas = null;
+        radioChips($("fKelas"), "fkelas", values, F.kelas, (v) => v, (v) => {
+          F.kelas = v; $("eKelas").textContent = "";
+          renderMatkul(); onSlotChange();
+        });
+        $("fKelasHint").textContent = F.semester ? "" : "Pilih semester dulu.";
+      }
+
+      function renderMatkul() {
+        const sel = $("fMatkul");
+        const list = F.semester && F.kelas
+          ? F.options.matkul.filter((m) => m.semester === F.semester && m.kelas === F.kelas)
+            .sort((a, b) => DAY_ORDER.indexOf(a.hari) - DAY_ORDER.indexOf(b.hari) || a.matkul.localeCompare(b.matkul, "id"))
+          : [];
+        if (!list.some((m) => m.matkul === F.matkul)) F.matkul = null;
+        sel.textContent = "";
+        sel.append(el("option", { value: "", text: F.kelas ? "Pilih mata kuliah" : "Pilih kelas dulu" }));
+        list.forEach((m) => sel.append(el("option", { value: m.matkul, text: m.matkul + " · " + m.hari })));
+        sel.value = F.matkul || "";
+        sel.disabled = !list.length;
+      }
+
+      /** Slot (minggu/semester/kelas/matkul) berubah: cek tugas yang sudah ada, simpan teks yang belum tersimpan. */
+      async function onSlotChange() {
+        F.tasks = F.tasks.filter((t) => !t.id);
+        F.tasks.forEach((t) => { if (!t.deadlineTouched) t.deadline = defaultDeadline(); });
+        F.existing = []; F.choice = null;
+        renderExisting(); renderReport();
+        if (!slotReady()) return;
+        const seq = ++F.checkSeq;
+        const slow = setTimeout(() => { if (seq === F.checkSeq) $("existing").innerHTML = '<p class="field__hint">Mengecek tugas yang sudah ada…</p>'; }, 250);
+        let rows;
+        try {
+          rows = await call("checkExisting", F.week, F.semester, F.matkul, F.kelas);
+        } catch (_) {
+          rows = null;
+        } finally {
+          clearTimeout(slow);
+        }
+        if (seq !== F.checkSeq) return; // Pilihan sudah berubah lagi.
+        F.existing = rows;
+        if (rows && activeExisting().length && F.autoEdit) choose("edit");
+        else {
+          if (rows && !activeExisting().length && !F.tasks.length) F.tasks = [newTask()];
+          renderExisting(); renderReport();
+        }
+        F.autoEdit = false;
+      }
+
+      function renderExisting() {
+        const host = $("existing");
+        host.textContent = "";
+        if (!slotReady()) return;
+        if (F.existing === null) {
+          host.append(el("div", { class: "callout callout--error" }, [
+            el("h3", { text: "Belum bisa mengecek tugas yang sudah ada" }),
+            el("p", { text: "Supaya tidak dobel, cek dulu sebelum mengisi. Periksa koneksi lalu coba lagi." }),
+            el("div", { class: "callout__actions" }, [el("button", { class: "link-btn", type: "button", text: "Cek ulang", onclick: onSlotChange })]),
+          ]));
+          return;
+        }
+        const ada = activeExisting();
+        const none = F.existing.find((t) => t.status === "tidak-ada");
+        const slotName = F.matkul + " - " + F.kelas;
+        if (ada.length) {
+          host.append(el("div", { class: "callout", role: "status" }, [
+            el("h3", { text: slotName + " sudah punya " + ada.length + " tugas di minggu " + F.week }),
+            el("ul", null, ada.map((t) => el("li", { text: t.deskripsi + " — deadline " + shortDate(t.deadline) + " · oleh " + t.pengisi }))),
+            el("p", { text: "Mau mengubah tugas itu, atau menambah tugas baru untuk kelas ini?" }),
+            el("div", { class: "callout__actions" }, [
+              el("button", { class: "link-btn", type: "button", text: "Edit tugas ini", "aria-pressed": String(F.choice === "edit"), onclick: () => choose("edit") }),
+              el("button", { class: "link-btn", type: "button", text: "Tambah tugas baru", "aria-pressed": String(F.choice === "new"), onclick: () => choose("new") }),
+            ]),
+          ]));
+        } else if (none) {
+          host.append(el("div", { class: "callout callout--info", role: "status" }, [
+            el("h3", { text: "Sudah dilaporkan: tidak ada tugas" }),
+            el("p", { text: "Dilaporkan " + none.pengisi + " · " + ago(none.diubah) + ". Kalau ternyata ada tugas, isi di bawah. Laporan \"tidak ada tugas\" akan diganti otomatis." }),
+          ]));
+        }
+      }
+
+      function choose(choice) {
+        F.choice = choice;
+        const drafts = F.tasks.filter((t) => !t.id);
+        F.tasks = choice === "edit"
+          ? activeExisting().map((t) => ({ key: ++taskSeq, id: t.id, deskripsi: t.deskripsi, deadline: t.deadline, deadlineTouched: true, touched: {} }))
+          : (drafts.length ? drafts : [newTask()]);
+        F.mode = "ada";
+        renderExisting(); renderReport();
+        const first = $("taskList").querySelector("textarea");
+        if (first) first.focus();
+      }
+
+      function renderReport() {
+        const ada = activeExisting();
+        const show = slotReady() && F.existing !== null && (!ada.length || !!F.choice);
+        $("reportArea").hidden = !show;
+        if (!show) return;
+        if (ada.length && F.mode === "tidak-ada") F.mode = "ada";
+        document.querySelectorAll('input[name="mode"]').forEach((r) => { r.checked = r.value === F.mode; });
+        $("modeNone").disabled = ada.length > 0;
+        $("modeHint").textContent = ada.length ? "Kelas ini sudah punya tugas. Hapus tugasnya dulu kalau memang tidak ada tugas." : "";
+        $("taskArea").hidden = F.mode !== "ada";
+        renderTasks();
+        $("submitBtn").querySelector(".btn-primary__label").textContent =
+          F.mode === "tidak-ada" ? "Laporkan tidak ada tugas" : F.choice === "edit" ? "Simpan perubahan" : "Simpan tugas";
+      }
+
+      function renderTasks() {
+        const list = $("taskList");
+        list.textContent = "";
+        const slot = currentSlot();
+        F.tasks.forEach((t, i) => {
+          const descId = "desc-" + t.key, dateId = "date-" + t.key;
+          const desc = el("textarea", { class: "input", id: descId, rows: "3", maxlength: String(MAX_DESC), "aria-describedby": "c-" + t.key + " e-" + descId });
+          desc.value = t.deskripsi;
+          const counter = el("span", { class: "counter", id: "c-" + t.key, "aria-live": "off", text: t.deskripsi.length + "/" + MAX_DESC });
+          const descErr = el("p", { class: "field__error", id: "e-" + descId });
+          desc.addEventListener("input", () => {
+            t.deskripsi = desc.value;
+            counter.textContent = desc.value.length + "/" + MAX_DESC;
+            if (descErr.textContent && !taskError(t, "deskripsi")) setFieldError(desc, descErr, "");
+          });
+          desc.addEventListener("blur", () => { t.touched.deskripsi = true; setFieldError(desc, descErr, taskError(t, "deskripsi")); });
+
+          const date = el("input", { class: "input", id: dateId, type: "date", "aria-describedby": "h-" + dateId + " e-" + dateId });
+          date.value = t.deadline;
+          const dateErr = el("p", { class: "field__error", id: "e-" + dateId });
+          const def = defaultDeadline();
+          const dateHint = el("p", { class: "field__hint", id: "h-" + dateId,
+            text: slot && def ? "Default: " + shortDate(def) + " (hari kuliah " + slot.hari + ")." : "" });
+          date.addEventListener("input", () => {
+            t.deadline = date.value; t.deadlineTouched = true;
+            if (dateErr.textContent && !taskError(t, "deadline")) setFieldError(date, dateErr, "");
+          });
+          date.addEventListener("blur", () => { t.touched.deadline = true; setFieldError(date, dateErr, taskError(t, "deadline")); });
+
+          let action = null;
+          if (t.id) action = el("button", { class: "icon-btn", type: "button", "aria-label": "Hapus tugas " + (i + 1),
+            html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Hapus',
+            onclick: (e) => removeSaved(t, e.currentTarget) });
+          else if (F.tasks.length > 1) action = el("button", { class: "icon-btn", type: "button", "aria-label": "Buang tugas " + (i + 1),
+            html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Buang',
+            onclick: () => { F.tasks = F.tasks.filter((x) => x !== t); renderTasks(); $("addTask").focus(); } });
+
+          list.append(el("li", { class: "task-edit" + (t.id ? " is-saved" : "") }, [
+            el("div", { class: "task-edit__head" }, [
+              el("span", null, [el("span", { class: "task-edit__title", text: "Tugas " + (i + 1) }), t.id ? el("span", { class: "task-edit__badge", text: "Tersimpan" }) : null]),
+              action,
+            ]),
+            el("div", { class: "field" }, [el("label", { class: "field__label", for: descId, text: "Deskripsi tugas" }), desc, counter, descErr]),
+            el("div", { class: "field" }, [el("label", { class: "field__label", for: dateId, text: "Deadline" }), date, dateHint, dateErr]),
+          ]));
+        });
+        $("addTask").hidden = F.tasks.length >= MAX_TASKS;
+      }
+
+      function taskError(t, field) {
+        if (field === "deskripsi") {
+          const v = t.deskripsi.trim();
+          if (!v) return "Tulis deskripsi tugasnya.";
+          if (v.length > MAX_DESC) return "Maksimal " + MAX_DESC + " karakter.";
+          return "";
+        }
+        return /^\d{4}-\d{2}-\d{2}$/.test(t.deadline) ? "" : "Pilih tanggal deadline.";
+      }
+      const nameError = () => $("fName").value.trim() ? "" : "Tulis namamu supaya tercatat di riwayat.";
+      function setFieldError(input, errNode, message) {
+        errNode.textContent = message;
+        if (message) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
+      }
+
+      function showFormAlert(kind, title, text, retry) {
+        const host = $("formAlert");
+        host.textContent = "";
+        const box = el("div", { class: "callout callout--" + kind, role: kind === "error" ? "alert" : "status", tabindex: "-1" }, [
+          el("h3", { text: title }), el("p", { text: text }),
+          retry ? el("div", { class: "callout__actions" }, [el("button", { class: "link-btn", type: "button", text: "Coba lagi", onclick: () => { host.textContent = ""; retry(); } })]) : null,
+        ]);
+        host.append(box);
+        return box;
+      }
+
+      async function submitForm(e) {
+        e.preventDefault();
+        if (F.saving || $("reportArea").hidden) return; // Slot belum lengkap / pilihan duplikat belum dibuat.
+        if (F.mode === "ada" && !F.tasks.length) { F.tasks = [newTask()]; renderTasks(); }
+        $("formAlert").textContent = "";
+        let firstInvalid = null;
+        if (F.mode === "ada") {
+          F.tasks.forEach((t) => {
+            ["deskripsi", "deadline"].forEach((field) => {
+              const id = (field === "deskripsi" ? "desc-" : "date-") + t.key;
+              const msg = taskError(t, field);
+              setFieldError($(id), $("e-" + id), msg);
+              if (msg && !firstInvalid) firstInvalid = $(id);
+            });
+          });
+        }
+        const nErr = nameError();
+        setFieldError($("fName"), $("eName"), nErr);
+        if (nErr && !firstInvalid) firstInvalid = $("fName");
+        if (firstInvalid) { firstInvalid.focus(); return; }
+
+        const payload = {
+          week: F.week, semester: F.semester, matkul: F.matkul, kelas: F.kelas, mode: F.mode, pengisi: $("fName").value.trim(),
+          tasks: F.mode === "ada" ? F.tasks.map((t) => ({ id: t.id || undefined, deskripsi: t.deskripsi.trim(), deadline: t.deadline })) : [],
+        };
+        const btn = $("submitBtn"), label = btn.querySelector(".btn-primary__label"), original = label.textContent;
+        F.saving = true;
+        btn.setAttribute("aria-busy", "true");
+        label.textContent = "Menyimpan…";
+        try {
+          const res = await call("saveTasks", payload);
+          remember({ semester: F.semester, kelas: F.kelas, name: payload.pengisi });
+          invalidateBoard();
+          showDone(payload, res);
+        } catch (err) {
+          showFormAlert("error", "Tugas belum tersimpan", err.message + " Isianmu masih ada, silakan simpan lagi.").focus();
+          window.scrollTo({ top: 0 });
+        } finally {
+          F.saving = false;
+          btn.removeAttribute("aria-busy");
+          label.textContent = original;
+        }
+      }
+
+      function invalidateBoard() { cache.clear(); state.data = null; }
+
+      function showDone(payload, res) {
+        $("uploadForm").hidden = true;
+        $("doneTitle").textContent = payload.matkul + " - " + payload.kelas;
+        $("doneText").textContent = payload.mode === "tidak-ada"
+          ? "Dilaporkan tidak ada tugas untuk minggu " + res.week + "."
+          : payload.tasks.length + " tugas tersimpan untuk minggu " + res.week + ". Terima kasih sudah mengingatkan teman-teman!";
+        $("uploadDone").hidden = false;
+        $("uploadDone").focus();
+        window.scrollTo({ top: 0 });
+        F.matkul = null; F.tasks = []; F.existing = []; F.choice = null; F.mode = "ada";
+      }
+
+      async function removeSaved(t, btn) {
+        const nErr = nameError();
+        if (nErr) {
+          setFieldError($("fName"), $("eName"), "Isi nama pengisi dulu sebelum menghapus tugas.");
+          $("fName").focus();
+          return;
+        }
+        const dlg = $("confirmDlg");
+        $("confirmText").textContent = "“" + (t.deskripsi.trim() || "Tugas tanpa deskripsi") + "” akan dihapus dari " + F.matkul + " - " + F.kelas + ", minggu " + F.week + ". Admin WRY masih bisa memulihkannya.";
+        dlg.returnValue = "";
+        dlg.showModal();
+        const answer = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+        if (answer !== "ok") { btn.focus(); return; }
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.lastChild.textContent = "Menghapus…";
+        try {
+          await call("deleteTask", t.id, $("fName").value.trim());
+          invalidateBoard();
+          F.existing = (F.existing || []).filter((x) => x.id !== t.id);
+          F.tasks = F.tasks.filter((x) => x !== t);
+          if (!activeExisting().length) { F.choice = null; if (!F.tasks.length) F.tasks = [newTask()]; }
+          renderExisting(); renderReport();
+          showFormAlert("info", "Tugas dihapus", "“" + t.deskripsi.trim() + "” sudah dihapus dari papan.");
+        } catch (err) {
+          btn.disabled = false;
+          btn.removeAttribute("aria-busy");
+          btn.lastChild.textContent = "Hapus";
+          showFormAlert("error", "Tugas belum terhapus", err.message).focus();
+        }
+      }
+
+      $("fWeek").addEventListener("change", (e) => {
+        F.week = Number(e.target.value);
+        renderWeekSelect();
+        onSlotChange();
+      });
+      $("fMatkul").addEventListener("change", (e) => {
+        F.matkul = e.target.value || null;
+        $("eMatkul").textContent = "";
+        onSlotChange();
+      });
+      document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", () => {
+        F.mode = r.value;
+        if (F.mode === "ada" && !F.tasks.length) F.tasks = [newTask()];
+        renderReport();
+      }));
+      $("addTask").addEventListener("click", () => {
+        F.tasks.push(newTask());
+        renderTasks();
+        $("desc-" + F.tasks[F.tasks.length - 1].key).focus();
+      });
+      $("fName").addEventListener("blur", () => setFieldError($("fName"), $("eName"), nameError()));
+      $("fName").addEventListener("input", () => { if ($("eName").textContent && !nameError()) setFieldError($("fName"), $("eName"), ""); });
+      $("uploadForm").addEventListener("submit", submitForm);
+      $("doneBoard").addEventListener("click", () => go({ week: F.week, view: "board" }));
+      $("doneAgain").addEventListener("click", () => { $("uploadDone").hidden = true; openForm({ week: F.week }); $("uploadTitle").focus(); });
+
+      // ───── Routing ─────
       function showView(view) {
         $("boardView").hidden = view !== "board";
         $("uploadView").hidden = view !== "unggah";
+        document.body.classList.toggle("is-form", view === "unggah");
       }
 
       function go(next, replace) {
@@ -690,11 +1289,10 @@
       function apply(next) {
         showView(next.view);
         if (next.view === "unggah") {
-          const p = state.prefill;
-          $("uploadInfo").textContent = "Form unggah sedang dibangun (batch 3)." + (p ? " Pilihan: Semester " + p.semester + " · " + p.matkul + " - " + p.kelas + " · minggu " + next.week + "." : "");
+          window.scrollTo({ top: 0 });
           $("uploadTitle").focus({ preventScroll: true });
-          window.scrollTo({ top: $("uploadView").offsetTop - 16 });
-          if (!state.data) showBoard(next.week);
+          openForm(state.prefill);
+          state.prefill = null;
           return;
         }
         if (!state.data || next.week !== state.week || !next.week) showBoard(next.week);
@@ -702,7 +1300,6 @@
 
       $("uploadBtn").addEventListener("click", (e) => { e.preventDefault(); go({ week: state.week, view: "unggah" }); });
       $("backToBoard").addEventListener("click", () => go({ week: state.week, view: "board" }));
-      $("uploadTitle").tabIndex = -1;
 
       if (boot.ready === false) {
         renderError("Sistem belum disiapkan admin. Silakan coba lagi nanti.", () => location.reload());
