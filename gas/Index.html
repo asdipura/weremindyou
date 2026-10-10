@@ -11,7 +11,6 @@
   <script type="application/json" id="boot"><?!= boot ?></script>
   <style>
     :root {
-      --wall: #aeb3ae;
       --ink: #1d1d1b;
       --ink-2: #4b4b47;
       --ink-3: #6b6b66;
@@ -43,10 +42,12 @@
     html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
-      background: var(--wall);
+      background: #2b2b2e;
       color: var(--ink);
       font: 400 16px/1.5 "Plus Jakarta Sans", system-ui, sans-serif;
     }
+    /* Dinding latar (BG IGS) — satu lapisan tetap di belakang band upload, papan, dan form. */
+    .backdrop { position: fixed; inset: 0; z-index: -1; background: #2b2b2e var(--bg-wall, none) center / cover no-repeat; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     button { font: inherit; color: inherit; }
     :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
@@ -103,21 +104,10 @@
     .upload-band {
       --w: clamp(min(343px, 100vw - 32px), 594 / 1984 * 100vw, 594px);
       --u: calc(var(--w) / 594);
-      position: relative; overflow: hidden; isolation: isolate;
+      position: relative;
       display: flex; justify-content: center;
       padding: calc(35 * var(--u)) 16px calc(39 * var(--u));
-      background: var(--wall);
     }
-    .upload-band__stripe {
-      position: absolute; right: calc(-176 / 1984 * 100%); height: calc(59.007 / 227 * 100%);
-      transform: translateY(-50%); z-index: -1; pointer-events: none; mix-blend-mode: overlay;
-      background: linear-gradient(90deg, rgba(255,255,255,.5) 0%, rgba(83,83,83,.5) 51.923%, rgba(255,255,255,.5) 100%);
-    }
-    .upload-band__stripe:nth-child(1) { top: calc(217.28 / 227 * 100%); width: calc(1959.093 / 1984 * 100%); }
-    .upload-band__stripe:nth-child(2) { top: calc(159.29 / 227 * 100%); width: calc(1763.184 / 1984 * 100%); }
-    .upload-band__stripe:nth-child(3) { top: calc(101.30 / 227 * 100%); width: calc(1443.924 / 1984 * 100%); }
-    .upload-band__stripe:nth-child(4) { top: calc(43.31 / 227 * 100%);  width: calc(1129.018 / 1984 * 100%); }
-    .upload-band__stripe:nth-child(5) { top: calc(-14.68 / 227 * 100%); width: calc(809.758 / 1984 * 100%); }
     .plate--upload {
       width: var(--w); height: calc(153 * var(--u)); border-radius: calc(5.748 * var(--u));
       background: rgba(255,255,255,.1); color: #fff;
@@ -171,13 +161,12 @@
 
     /* ───────── Papan tugas ───────── */
     .board { position: relative; padding: 8px 0 64px; }
-    .board::before { content: ""; position: absolute; inset: 0; background: var(--grain); mix-blend-mode: overlay; opacity: .35; pointer-events: none; }
     .wrap { position: relative; width: min(1200px, 100% - 32px); margin-inline: auto; }
 
     .board-head { display: grid; gap: 4px; padding: 8px 0 20px; }
-    .board-head h2 { margin: 0; font: 400 clamp(40px, 6vw, 64px) / 1 "Instrument Serif", serif; color: var(--ink); }
+    .board-head h2 { margin: 0; font: 400 clamp(40px, 6vw, 64px) / 1 "Instrument Serif", serif; color: #f3f1ec; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
     .board-head h2 em { font-style: italic; }
-    .board-head p { margin: 0; max-width: 70ch; color: var(--ink-2); font-size: 15px; }
+    .board-head p { margin: 0; max-width: 70ch; color: #d4d2cc; font-size: 15px; }
 
     /* Rel filter baja, menempel saat digulir. */
     .rail {
@@ -313,15 +302,14 @@
 
     /* ───────── Form unggah: kertas di papan jepit ───────── */
     .upload-view { position: relative; padding: 20px 0 64px; min-height: 100vh; }
-    .upload-view::before { content: ""; position: absolute; inset: 0; background: var(--grain); mix-blend-mode: overlay; opacity: .35; pointer-events: none; }
     .wrap--form { width: min(640px, 100% - 24px); }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-bottom: 18px; padding: 0 12px 0 8px;
       border: 0; border-radius: 4px; background: transparent; cursor: pointer;
-      font: 600 15px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink);
+      font: 600 15px/1 "Plus Jakarta Sans", sans-serif; color: #f3f1ec;
     }
     .back-link svg { width: 20px; height: 20px; }
-    @media (hover: hover) { .back-link:hover { background: rgba(0,0,0,.08); } }
+    @media (hover: hover) { .back-link:hover { background: rgba(255,255,255,.1); } }
     .clipboard {
       position: relative; padding: 34px 12px 12px; border-radius: 10px;
       background: linear-gradient(160deg, #a77a4c, #8a5f36 60%, #7a5230);
@@ -342,6 +330,7 @@
 
     .field { margin: 0 0 22px; padding: 0; border: 0; min-width: 0; }
     .field__label { display: block; margin-bottom: 8px; padding: 0; font: 600 15px/1.3 "Plus Jakarta Sans", sans-serif; color: var(--ink); }
+    .field__optional { font-weight: 400; color: var(--ink-3); }
     .field__hint { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); }
     .field__hint:empty, .field__error:empty { display: none; }
     .field__error { margin: 6px 0 0; font: 600 13px/1.4 "Plus Jakarta Sans", sans-serif; color: #b3261e; }
@@ -433,6 +422,7 @@
   </style>
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true"></div>
   <header class="hero">
     <img class="hero__img" id="heroImg" alt="" fetchpriority="high">
     <h1 class="sr-only" id="heroTitle">We Remind You! Perkuliahan minggu ke</h1>
@@ -457,12 +447,7 @@
     </button>
   </header>
 
-  <section class="upload-band grain" aria-label="Unggah tugas">
-    <span class="upload-band__stripe" aria-hidden="true"></span>
-    <span class="upload-band__stripe" aria-hidden="true"></span>
-    <span class="upload-band__stripe" aria-hidden="true"></span>
-    <span class="upload-band__stripe" aria-hidden="true"></span>
-    <span class="upload-band__stripe" aria-hidden="true"></span>
+  <section class="upload-band" aria-label="Unggah tugas">
     <a class="plate plate--upload grain" id="uploadBtn" href="#unggah">
       <span class="plate__face" aria-hidden="true"></span>
       <span class="plate__content">UPLOAD TUGAS</span>
@@ -515,18 +500,19 @@
                 <p class="field__error" id="eSemester"></p>
               </fieldset>
 
+              <div class="field">
+                <label class="field__label" for="fMatkul">Mata kuliah</label>
+                <select class="input" id="fMatkul" disabled aria-describedby="fMatkulHint eMatkul"></select>
+                <p class="field__hint" id="fMatkulHint">Dikelompokkan per hari kuliah.</p>
+                <p class="field__error" id="eMatkul"></p>
+              </div>
+
               <fieldset class="field" id="kelasField">
                 <legend class="field__label">Kelas</legend>
                 <div class="choices" id="fKelas"></div>
-                <p class="field__hint" id="fKelasHint">Pilih semester dulu.</p>
+                <p class="field__hint" id="fKelasHint">Pilih mata kuliah dulu.</p>
                 <p class="field__error" id="eKelas"></p>
               </fieldset>
-
-              <div class="field">
-                <label class="field__label" for="fMatkul">Mata kuliah</label>
-                <select class="input" id="fMatkul" disabled aria-describedby="eMatkul"></select>
-                <p class="field__error" id="eMatkul"></p>
-              </div>
 
               <div id="existing" aria-live="polite"></div>
 
@@ -549,10 +535,9 @@
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="fName">Nama pengisi</label>
-                  <input class="input" id="fName" name="name" autocomplete="name" maxlength="60" aria-describedby="fNameHint eName">
-                  <p class="field__hint" id="fNameHint">Tercatat di riwayat perubahan.</p>
-                  <p class="field__error" id="eName"></p>
+                  <label class="field__label" for="fName">Nama pengisi <span class="field__optional">(opsional)</span></label>
+                  <input class="input" id="fName" name="name" autocomplete="name" maxlength="60" aria-describedby="fNameHint">
+                  <p class="field__hint" id="fNameHint">Tercatat di riwayat perubahan. Kalau dikosongkan, tertulis “Kontributor Kelas”.</p>
                 </div>
 
                 <button class="btn-primary grain" type="submit" id="submitBtn">
@@ -624,6 +609,7 @@
       const mobile = window.matchMedia("(max-width: 767px)");
       function setHeroImage() {
         $("heroImg").src = asset(mobile.matches ? "hero-mobile.webp" : "hero-desktop.webp");
+        document.documentElement.style.setProperty("--bg-wall", 'url("' + asset(mobile.matches ? "bg-wall-mobile.webp" : "bg-wall.webp") + '")');
       }
       setHeroImage();
       mobile.addEventListener("change", setHeroImage);
@@ -879,9 +865,10 @@
       // ───── Form unggah ─────
       const DAY_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
       const FORM_KEY = "wry.form";
+      const DEFAULT_NAME = "Kontributor Kelas";
       const MAX_TASKS = 10, MAX_DESC = 160;
       const F = {
-        options: null, week: null, semester: null, kelas: null, matkul: null, mode: "ada",
+        options: null, week: null, semester: null, matkul: null, hari: null, kelas: null, mode: "ada",
         existing: [], // null = gagal dicek
         choice: null, // "edit" | "new" saat slot sudah punya tugas
         tasks: [], nameTouched: false, checkSeq: 0, saving: false, autoEdit: false,
@@ -893,7 +880,7 @@
 
       const newTask = () => ({ key: ++taskSeq, id: "", deskripsi: "", deadline: defaultDeadline(), deadlineTouched: false, touched: {} });
       const weekInfo = (w) => F.options.weeks.find((x) => x.week === w);
-      const slotReady = () => !!(F.semester && F.kelas && F.matkul);
+      const slotReady = () => !!(F.semester && F.matkul && F.hari && F.kelas);
       const currentSlot = () => F.options.matkul.find((m) => m.semester === F.semester && m.kelas === F.kelas && m.matkul === F.matkul);
       const activeExisting = () => (F.existing || []).filter((t) => t.status === "ada");
       function defaultDeadline() {
@@ -927,15 +914,15 @@
         const week = Number(p.week) || F.week || F.options.currentWeek;
         F.week = weekInfo(week) ? week : F.options.currentWeek;
         if (p.semester) {
-          F.semester = Number(p.semester); F.kelas = p.kelas; F.matkul = p.matkul; F.tasks = [];
+          const hit = F.options.matkul.find((m) => m.semester === Number(p.semester) && m.matkul === p.matkul && m.kelas === p.kelas);
+          F.semester = Number(p.semester); F.matkul = p.matkul; F.hari = hit ? hit.hari : null; F.kelas = p.kelas; F.tasks = [];
         } else if (!F.semester) {
           F.semester = Number(mem.semester) || null;
-          F.kelas = mem.kelas || null;
         }
         F.autoEdit = p.intent === "edit";
         if (!$("fName").value) $("fName").value = mem.name || "";
         $("uploadForm").hidden = false;
-        renderWeekSelect(); renderSemester(); renderKelas(); renderMatkul();
+        renderWeekSelect(); renderSemester(); renderMatkul(); renderKelas();
         await onSlotChange();
       }
 
@@ -966,32 +953,47 @@
         if (!values.includes(F.semester)) F.semester = null;
         radioChips($("fSemester"), "fsem", values, F.semester, (v) => String(v), (v) => {
           F.semester = v; $("eSemester").textContent = "";
-          renderKelas(); renderMatkul(); onSlotChange();
+          renderMatkul(); renderKelas(); onSlotChange();
         });
+      }
+
+      /** Mata kuliah dikelompokkan per hari (optgroup). Matkul yang kelasnya beda hari muncul di tiap harinya. */
+      function renderMatkul() {
+        const sel = $("fMatkul");
+        const seen = new Set();
+        const list = F.semester ? F.options.matkul.filter((m) => {
+          const key = m.hari + "|" + m.matkul;
+          if (m.semester !== F.semester || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).sort((a, b) => DAY_ORDER.indexOf(a.hari) - DAY_ORDER.indexOf(b.hari) || a.matkul.localeCompare(b.matkul, "id")) : [];
+        if (!list.some((m) => m.matkul === F.matkul && m.hari === F.hari)) { F.matkul = null; F.hari = null; }
+        sel.textContent = "";
+        sel.append(el("option", { value: "", text: F.semester ? "Pilih mata kuliah" : "Pilih semester dulu" }));
+        DAY_ORDER.forEach((day) => {
+          const items = list.filter((m) => m.hari === day);
+          if (!items.length) return;
+          const group = el("optgroup", { label: day });
+          items.forEach((m) => group.append(el("option", { value: m.hari + "|" + m.matkul, text: m.matkul })));
+          sel.append(group);
+        });
+        sel.value = F.matkul ? F.hari + "|" + F.matkul : "";
+        sel.disabled = !list.length;
       }
 
       function renderKelas() {
-        const values = F.semester ? [...new Set(F.options.matkul.filter((m) => m.semester === F.semester).map((m) => m.kelas))].sort() : [];
-        if (!values.includes(F.kelas)) F.kelas = null;
+        const values = F.matkul
+          ? [...new Set(F.options.matkul.filter((m) => m.semester === F.semester && m.matkul === F.matkul && m.hari === F.hari).map((m) => m.kelas))].sort()
+          : [];
+        if (!values.includes(F.kelas)) {
+          const mem = remembered().kelas;
+          F.kelas = values.length === 1 ? values[0] : values.includes(mem) ? mem : null; // Satu kelas / kelas terakhir langsung terpilih.
+        }
         radioChips($("fKelas"), "fkelas", values, F.kelas, (v) => v, (v) => {
           F.kelas = v; $("eKelas").textContent = "";
-          renderMatkul(); onSlotChange();
+          onSlotChange();
         });
-        $("fKelasHint").textContent = F.semester ? "" : "Pilih semester dulu.";
-      }
-
-      function renderMatkul() {
-        const sel = $("fMatkul");
-        const list = F.semester && F.kelas
-          ? F.options.matkul.filter((m) => m.semester === F.semester && m.kelas === F.kelas)
-            .sort((a, b) => DAY_ORDER.indexOf(a.hari) - DAY_ORDER.indexOf(b.hari) || a.matkul.localeCompare(b.matkul, "id"))
-          : [];
-        if (!list.some((m) => m.matkul === F.matkul)) F.matkul = null;
-        sel.textContent = "";
-        sel.append(el("option", { value: "", text: F.kelas ? "Pilih mata kuliah" : "Pilih kelas dulu" }));
-        list.forEach((m) => sel.append(el("option", { value: m.matkul, text: m.matkul + " · " + m.hari })));
-        sel.value = F.matkul || "";
-        sel.disabled = !list.length;
+        $("fKelasHint").textContent = F.matkul ? "" : "Pilih mata kuliah dulu.";
       }
 
       /** Slot (minggu/semester/kelas/matkul) berubah: cek tugas yang sudah ada, simpan teks yang belum tersimpan. */
@@ -1139,7 +1141,6 @@
         }
         return /^\d{4}-\d{2}-\d{2}$/.test(t.deadline) ? "" : "Pilih tanggal deadline.";
       }
-      const nameError = () => $("fName").value.trim() ? "" : "Tulis namamu supaya tercatat di riwayat.";
       function setFieldError(input, errNode, message) {
         errNode.textContent = message;
         if (message) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
@@ -1172,13 +1173,10 @@
             });
           });
         }
-        const nErr = nameError();
-        setFieldError($("fName"), $("eName"), nErr);
-        if (nErr && !firstInvalid) firstInvalid = $("fName");
         if (firstInvalid) { firstInvalid.focus(); return; }
 
         const payload = {
-          week: F.week, semester: F.semester, matkul: F.matkul, kelas: F.kelas, mode: F.mode, pengisi: $("fName").value.trim(),
+          week: F.week, semester: F.semester, matkul: F.matkul, kelas: F.kelas, mode: F.mode, pengisi: $("fName").value.trim() || DEFAULT_NAME,
           tasks: F.mode === "ada" ? F.tasks.map((t) => ({ id: t.id || undefined, deskripsi: t.deskripsi.trim(), deadline: t.deadline })) : [],
         };
         const btn = $("submitBtn"), label = btn.querySelector(".btn-primary__label"), original = label.textContent;
@@ -1187,7 +1185,7 @@
         label.textContent = "Menyimpan…";
         try {
           const res = await call("saveTasks", payload);
-          remember({ semester: F.semester, kelas: F.kelas, name: payload.pengisi });
+          remember({ semester: F.semester, kelas: F.kelas, name: $("fName").value.trim() });
           invalidateBoard();
           showDone(payload, res);
         } catch (err) {
@@ -1211,16 +1209,10 @@
         $("uploadDone").hidden = false;
         $("uploadDone").focus();
         window.scrollTo({ top: 0 });
-        F.matkul = null; F.tasks = []; F.existing = []; F.choice = null; F.mode = "ada";
+        F.matkul = null; F.hari = null; F.tasks = []; F.existing = []; F.choice = null; F.mode = "ada";
       }
 
       async function removeSaved(t, btn) {
-        const nErr = nameError();
-        if (nErr) {
-          setFieldError($("fName"), $("eName"), "Isi nama pengisi dulu sebelum menghapus tugas.");
-          $("fName").focus();
-          return;
-        }
         const dlg = $("confirmDlg");
         $("confirmText").textContent = "“" + (t.deskripsi.trim() || "Tugas tanpa deskripsi") + "” akan dihapus dari " + F.matkul + " - " + F.kelas + ", minggu " + F.week + ". Admin WRY masih bisa memulihkannya.";
         dlg.returnValue = "";
@@ -1231,7 +1223,7 @@
         btn.setAttribute("aria-busy", "true");
         btn.lastChild.textContent = "Menghapus…";
         try {
-          await call("deleteTask", t.id, $("fName").value.trim());
+          await call("deleteTask", t.id, $("fName").value.trim() || DEFAULT_NAME);
           invalidateBoard();
           F.existing = (F.existing || []).filter((x) => x.id !== t.id);
           F.tasks = F.tasks.filter((x) => x !== t);
@@ -1252,8 +1244,12 @@
         onSlotChange();
       });
       $("fMatkul").addEventListener("change", (e) => {
-        F.matkul = e.target.value || null;
+        const value = e.target.value || "";
+        const cut = value.indexOf("|");
+        F.hari = value ? value.slice(0, cut) : null;
+        F.matkul = value ? value.slice(cut + 1) : null;
         $("eMatkul").textContent = "";
+        renderKelas();
         onSlotChange();
       });
       document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", () => {
@@ -1266,8 +1262,6 @@
         renderTasks();
         $("desc-" + F.tasks[F.tasks.length - 1].key).focus();
       });
-      $("fName").addEventListener("blur", () => setFieldError($("fName"), $("eName"), nameError()));
-      $("fName").addEventListener("input", () => { if ($("eName").textContent && !nameError()) setFieldError($("fName"), $("eName"), ""); });
       $("uploadForm").addEventListener("submit", submitForm);
       $("doneBoard").addEventListener("click", () => go({ week: F.week, view: "board" }));
       $("doneAgain").addEventListener("click", () => { $("uploadDone").hidden = true; openForm({ week: F.week }); $("uploadTitle").focus(); });

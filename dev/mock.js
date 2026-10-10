@@ -115,7 +115,7 @@
     const list = await rows(week);
     const now = new Date().toISOString();
     const inSlot = list.filter((t) => t.status !== "dihapus" && slotKey(t.semester, t.matkul, t.kelas) === slotKey(p.semester, p.matkul, p.kelas));
-    const base = { minggu: week, semester: Number(p.semester), matkul: p.matkul, kelas: p.kelas, dibuat: now, diubah: now, pengisi: p.pengisi.trim() };
+    const base = { minggu: week, semester: Number(p.semester), matkul: p.matkul, kelas: p.kelas, dibuat: now, diubah: now, pengisi: (p.pengisi || "").trim() || "Kontributor Kelas" };
     const ids = [];
     if (p.mode === "tidak-ada") {
       if (inSlot.some((t) => t.status === "ada")) throw new Error("Kelas ini masih punya tugas aktif. Hapus tugasnya dulu bila memang tidak ada tugas.");
@@ -141,7 +141,7 @@
   async function deleteTask(id, pengisi) {
     for (const list of store.values()) {
       const row = list.find((t) => t.id === id);
-      if (row && row.status !== "dihapus") { row.status = "dihapus"; row.pengisi = pengisi; return { id }; }
+      if (row && row.status !== "dihapus") { row.status = "dihapus"; row.pengisi = pengisi || "Kontributor Kelas"; return { id }; }
     }
     throw new Error("Tugas tidak ditemukan atau sudah dihapus.");
   }

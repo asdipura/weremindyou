@@ -7,3 +7,6 @@ __pycache__/
 
 # File sumber hero (besar); versi web ada di assets/*.webp
 Hero Image*.jpg
+
+# File sumber background (23 MB); versi web ada di assets/bg-wall*.webp
+BG IGS*.png

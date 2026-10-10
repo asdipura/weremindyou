@@ -10,6 +10,7 @@ const CONFIG = Object.freeze({
   DAYS: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"],
   MAX_TASKS_PER_SUBMIT: 10,
   CACHE_SECONDS: 300,
+  DEFAULT_NAME: "Kontributor Kelas",
 });
 
 const SHEETS = Object.freeze({
@@ -265,7 +266,7 @@ function saveTasks(payload) {
   if (!cfg.accepting) throw new Error("Form unggah sedang ditutup oleh admin WRY.");
   const week = clampWeek_(payload.week, cfg);
   const slot = findSlot_(cfg, payload.semester, payload.matkul, payload.kelas);
-  const pengisi = field_(payload.pengisi, "Nama pengisi", 60, true);
+  const pengisi = pengisi_(payload.pengisi);
   const mode = payload.mode === STATUS.tidakAda ? STATUS.tidakAda : STATUS.ada;
   const tasks = mode === STATUS.ada ? payload.tasks : [];
   if (mode === STATUS.ada && (!Array.isArray(tasks) || !tasks.length || tasks.length > CONFIG.MAX_TASKS_PER_SUBMIT))
@@ -315,7 +316,7 @@ function saveTasks(payload) {
 
 /** Soft delete: baris tetap ada dengan status "dihapus"; admin bisa memulihkan. */
 function deleteTask(id, pengisi) {
-  const name = field_(pengisi, "Nama pengisi", 60, true);
+  const name = pengisi_(pengisi);
   return locked_(function () {
     const sheet = sheetByName_(SHEETS.tugas.name);
     const row = readTugas_(sheet).find(function (t) { return t.id === String(id); });
@@ -479,6 +480,10 @@ function sheet_(book, def) {
   s.getRange(1, 1, 1, def.header.length).setBackground("#151515").setFontColor("#ffffff").setFontWeight("bold");
   s.setFrozenRows(1);
   return s;
+}
+/** Nama pengisi opsional; kosong = "Kontributor Kelas". */
+function pengisi_(value) {
+  return field_(typeof value === "string" ? value : "", "Nama pengisi", 60, false) || CONFIG.DEFAULT_NAME;
 }
 function slotKey_(semester, matkul, kelas) {
   return [Number(semester), matkul, kelas].join("\u001f");
