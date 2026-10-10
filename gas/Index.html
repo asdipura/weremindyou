@@ -221,6 +221,18 @@
     .panel__title p { margin: 0; font: 500 14px/1.3 "Plus Jakarta Sans", sans-serif; color: var(--ink-3); }
 
     .group + .group { margin-top: 28px; }
+    /* Pemisah hari: ───── SENIN ───── */
+    .day { margin: 0 0 20px; }
+    .day + .day { margin-top: 36px; }
+    .day__label {
+      display: flex; align-items: center; gap: 14px; margin: 0 0 18px;
+      font: 600 13px/1 "Poppins", sans-serif; letter-spacing: .18em; text-transform: uppercase;
+      color: #fff7ea; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    }
+    .day__label::before, .day__label::after {
+      content: ""; flex: 1; height: 2px; border-radius: 1px;
+      background: rgba(255,247,234,.6); box-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
     .tape-label {
       display: inline-block; margin: 0 0 14px; padding: 6px 12px 5px; border-radius: 2px;
       background: linear-gradient(180deg, #2a2a2a, var(--label)); color: #f3f3f3;
@@ -242,7 +254,6 @@
     }
     .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
     .card__title { margin: 0; font: 400 28px/1.05 "Instrument Serif", serif; color: var(--blue-ink); }
-    .card__day { font: 500 12px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
     .task { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 10px 0; }
     .task + .task { border-top: 1px dashed rgba(0,0,0,.2); }
     .task__desc { margin: 0; font: 300 15px/1.45 "Plus Jakarta Sans", sans-serif; color: var(--ink); overflow-wrap: anywhere; }
@@ -745,7 +756,12 @@
           el("h3", { html: "<i>S</i>emest<i>e</i>r " + s.semester }),
           el("p", { text: tasks + " tugas · " + (empty ? empty + " kelas belum ada info" : "semua kelas sudah melapor") }),
         ]));
-        s.matkul.forEach((g) => cork.append(group(s, g, d)));
+        byDay(s).forEach((day) => {
+          cork.append(el("section", { class: "day", "aria-label": day.hari }, [
+            el("h4", { class: "day__label", text: day.hari }),
+            ...day.groups.map((g) => group(s, g, d)),
+          ]));
+        });
         const wrap = el("section", { class: "panel", "aria-label": "Semester " + s.semester });
         for (let i = 0; i < 4; i++) wrap.append($("boltTpl").content.firstElementChild.cloneNode(true));
         wrap.querySelectorAll("img[data-asset]").forEach((img) => { img.src = asset(img.dataset.asset); });
@@ -753,10 +769,21 @@
         return wrap;
       }
 
+      /** Kelompokkan per hari kuliah; matkul yang kelasnya beda hari muncul di tiap harinya. */
+      const DAYS_BOARD = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+      function byDay(s) {
+        return DAYS_BOARD.map((hari) => ({
+          hari: hari,
+          groups: s.matkul
+            .map((g) => ({ name: g.name, classes: g.classes.filter((c) => c.hari === hari) }))
+            .filter((g) => g.classes.length),
+        })).filter((day) => day.groups.length);
+      }
+
       function group(s, g, d) {
         const filled = g.classes.filter((c) => c.status !== "kosong");
         const empty = g.classes.filter((c) => c.status === "kosong");
-        const node = el("div", { class: "group" }, [el("h4", { class: "tape-label", text: g.name })]);
+        const node = el("div", { class: "group" }, [el("h5", { class: "tape-label", text: g.name })]);
         if (filled.length) node.append(el("div", { class: "cards" }, filled.map((c) => c.status === "ada" ? taskCard(s, g, c) : noneCard(g, c))));
         if (empty.length) {
           const row = el("div", { class: "empty-slots" }, [el("span", { class: "empty-slots__label", text: filled.length ? "Belum ada info:" : "Belum ada info" })]);
@@ -776,8 +803,7 @@
         const latest = c.tasks.reduce((a, t) => (t.diubah > a.diubah ? t : a), c.tasks[0]);
         return el("article", { class: "card grain", "aria-label": g.name + " kelas " + c.kelas }, [
           el("div", { class: "card__head" }, [
-            el("h5", { class: "card__title", text: "Kelas " + c.kelas }),
-            el("span", { class: "card__day", text: c.hari }),
+            el("h6", { class: "card__title", text: "Kelas " + c.kelas }),
           ]),
           ...c.tasks.map((t) => el("div", { class: "task" }, [
             el("p", { class: "task__desc", text: t.deskripsi }),
@@ -794,8 +820,7 @@
       function noneCard(g, c) {
         return el("article", { class: "card card--none grain", "aria-label": g.name + " kelas " + c.kelas + ": tidak ada tugas" }, [
           el("div", { class: "card__head" }, [
-            el("h5", { class: "card__title", text: "Kelas " + c.kelas }),
-            el("span", { class: "card__day", text: c.hari }),
+            el("h6", { class: "card__title", text: "Kelas " + c.kelas }),
           ]),
           el("span", { class: "stamp", text: "TIDAK ADA TUGAS" }),
           el("div", { class: "card__foot" }, [el("span", { text: "dilaporkan " + c.reportedBy + " · " + ago(c.reportedAt) })]),
@@ -985,10 +1010,8 @@
         const values = F.matkul
           ? [...new Set(F.options.matkul.filter((m) => m.semester === F.semester && m.matkul === F.matkul && m.hari === F.hari).map((m) => m.kelas))].sort()
           : [];
-        if (!values.includes(F.kelas)) {
-          const mem = remembered().kelas;
-          F.kelas = values.length === 1 ? values[0] : values.includes(mem) ? mem : null; // Satu kelas / kelas terakhir langsung terpilih.
-        }
+        // Kelas tidak diingat: satu orang bisa beda kelas di tiap matkul. Terpilih otomatis hanya bila matkul ini cuma punya satu kelas.
+        if (!values.includes(F.kelas)) F.kelas = values.length === 1 ? values[0] : null;
         radioChips($("fKelas"), "fkelas", values, F.kelas, (v) => v, (v) => {
           F.kelas = v; $("eKelas").textContent = "";
           onSlotChange();
@@ -1185,7 +1208,7 @@
         label.textContent = "Menyimpan…";
         try {
           const res = await call("saveTasks", payload);
-          remember({ semester: F.semester, kelas: F.kelas, name: $("fName").value.trim() });
+          remember({ semester: F.semester, name: $("fName").value.trim() });
           invalidateBoard();
           showDone(payload, res);
         } catch (err) {
