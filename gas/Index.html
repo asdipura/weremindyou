@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>We Remind You!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <script type="application/json" id="boot"><?!= boot ?></script>
+  <style>
+    :root {
+      --wall: #aeb3ae;
+      --ink: #1d1d1b;
+      --ink-2: #4b4b47;
+      --ink-3: #6b6b66;
+      --paper: #f6f4ee;
+      --paper-edge: #e6e2d6;
+      --blue: #0381b9;
+      --blue-hover: #0790cc;
+      --blue-press: #036e9e;
+      --blue-ink: #0493c7;
+      --sticky: #fbe46b;
+      --red: #e3241b;
+      --cork: #b98754;
+      --steel-hi: #e6e9e9;
+      --steel-lo: #a7acac;
+      --steel-dark: #5c5f60;
+      --steel-dark-text: #d6d9da;
+      --label: #1b1b1b;
+      --stamp: #2f7a4d;
+      --focus: #ffe14d;
+      --ease-out: cubic-bezier(.2, .8, .2, 1);
+      --t-fast: 120ms;
+      --t-base: 180ms;
+      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      --cork-specks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .29 0 0 0 0 .17 0 0 0 0 .08 0 0 0 -3.2 1.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
+      --cork-flecks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .8 0 0 0 0 .6 0 0 0 4 -2.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--wall);
+      color: var(--ink);
+      font: 400 16px/1.5 "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    button { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    /* Tekstur grain untuk permukaan fisik (plat, kertas, dinding). */
+    .grain { position: relative; isolation: isolate; }
+    .grain::after {
+      content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background: var(--grain); mix-blend-mode: overlay; opacity: .45; border-radius: inherit;
+    }
+
+    /* ───────── Hero ───────── */
+    .hero { position: relative; container-type: inline-size; aspect-ratio: 1984 / 1338; overflow: hidden; background: #8d918d; }
+    .hero__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .hero__week {
+      position: absolute; margin: 0;
+      left: calc(880 / 1984 * 100%); top: calc(776 / 1338 * 100%); width: calc(222 / 1984 * 100%);
+      font: 700 calc(210 / 1984 * 100cqw) / calc(235.159 / 210) "Poppins", sans-serif;
+      color: #dbdfe2; text-align: center; mix-blend-mode: lighten; white-space: nowrap;
+      transition: opacity var(--t-base) var(--ease-out);
+    }
+    .hero__week.is-changing { opacity: .25; }
+    .plate.hero__nav { position: absolute; top: calc(50% - var(--s) * 76 / 126); }
+    .hero__nav--prev { left: calc(56 / 1984 * 100%); }
+    .hero__nav--next { right: calc(56 / 1984 * 100%); }
+    @media (max-width: 767px) {
+      .hero { aspect-ratio: 976 / 1422; }
+      .hero__week {
+        left: calc(377 / 976 * 100%); top: calc(811 / 1422 * 100%); width: calc(222 / 976 * 100%);
+        font-size: calc(210 / 976 * 100cqw);
+      }
+      .plate.hero__nav { top: 62%; }
+      .hero__nav--prev { left: 8px; }
+      .hero__nav--next { right: 8px; }
+    }
+
+    /* ───────── Plat logam (dipakai tombol unggah & navigasi minggu) ───────── */
+    .plate {
+      position: relative; display: grid; place-items: center;
+      border: 0; padding: 0; cursor: pointer; text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out), opacity var(--t-base);
+    }
+    .plate__face { position: absolute; transition: background-color var(--t-base) var(--ease-out), box-shadow var(--t-fast) var(--ease-out); }
+    .plate__content { position: relative; z-index: 2; transition: transform var(--t-fast) var(--ease-out); }
+    .plate__bolt { position: absolute; z-index: 2; transition: transform 260ms var(--ease-out); }
+    .plate__bolt img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    @media (hover: hover) {
+      .plate:not([aria-disabled="true"]):hover .plate__bolt { transform: rotate(35deg); }
+    }
+    .plate:not([aria-disabled="true"]):active .plate__bolt { transform: rotate(35deg); }
+    .plate[aria-disabled="true"] { cursor: not-allowed; opacity: .45; }
+
+    /* Plat biru UNGGAH TUGAS — Figma 50:2027, 1u = 1 px Figma. */
+    .upload-band {
+      --w: clamp(min(343px, 100vw - 32px), 594 / 1984 * 100vw, 594px);
+      --u: calc(var(--w) / 594);
+      position: relative; overflow: hidden; isolation: isolate;
+      display: flex; justify-content: center;
+      padding: calc(35 * var(--u)) 16px calc(39 * var(--u));
+      background: var(--wall);
+    }
+    .upload-band__stripe {
+      position: absolute; right: calc(-176 / 1984 * 100%); height: calc(59.007 / 227 * 100%);
+      transform: translateY(-50%); z-index: -1; pointer-events: none; mix-blend-mode: overlay;
+      background: linear-gradient(90deg, rgba(255,255,255,.5) 0%, rgba(83,83,83,.5) 51.923%, rgba(255,255,255,.5) 100%);
+    }
+    .upload-band__stripe:nth-child(1) { top: calc(217.28 / 227 * 100%); width: calc(1959.093 / 1984 * 100%); }
+    .upload-band__stripe:nth-child(2) { top: calc(159.29 / 227 * 100%); width: calc(1763.184 / 1984 * 100%); }
+    .upload-band__stripe:nth-child(3) { top: calc(101.30 / 227 * 100%); width: calc(1443.924 / 1984 * 100%); }
+    .upload-band__stripe:nth-child(4) { top: calc(43.31 / 227 * 100%);  width: calc(1129.018 / 1984 * 100%); }
+    .upload-band__stripe:nth-child(5) { top: calc(-14.68 / 227 * 100%); width: calc(809.758 / 1984 * 100%); }
+    .plate--upload {
+      width: var(--w); height: calc(153 * var(--u)); border-radius: calc(5.748 * var(--u));
+      background: rgba(255,255,255,.1); color: #fff;
+      box-shadow: calc(8.623 * var(--u)) calc(9.581 * var(--u)) calc(21.269 * var(--u)) calc(3.832 * var(--u)) rgba(0,0,0,.59);
+    }
+    .plate--upload .plate__face { inset: calc(11 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u)); background: var(--blue); }
+    .plate--upload .plate__content {
+      font: 700 calc(48 * var(--u)) / calc(71.706 / 48) "Poppins", sans-serif; white-space: nowrap;
+      transform: translateY(calc(3 * var(--u)));
+    }
+    .plate--upload .plate__bolt { width: calc(25.949 * var(--u)); height: calc(25.787 * var(--u)); }
+    .plate--upload .bolt-tl { left: calc(16.29 * var(--u)); top: calc(18.2 * var(--u)); }
+    .plate--upload .bolt-tr { right: calc(16.29 * var(--u)); top: calc(18.2 * var(--u)); }
+    .plate--upload .bolt-bl { left: calc(16.29 * var(--u)); top: calc(110 * var(--u)); }
+    .plate--upload .bolt-br { right: calc(16.29 * var(--u)); top: calc(110 * var(--u)); }
+    @media (hover: hover) {
+      .plate--upload:hover {
+        transform: translateY(calc(-3 * var(--u)));
+        box-shadow: calc(11 * var(--u)) calc(14 * var(--u)) calc(28 * var(--u)) calc(4 * var(--u)) rgba(0,0,0,.55);
+      }
+      .plate--upload:hover .plate__face { background: var(--blue-hover); }
+    }
+    .plate--upload:active {
+      transform: translateY(calc(2 * var(--u))); transition-duration: 70ms;
+      box-shadow: calc(3 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)) rgba(0,0,0,.6);
+    }
+    .plate--upload:active .plate__face { background: var(--blue-press); box-shadow: inset 0 calc(4 * var(--u)) calc(10 * var(--u)) rgba(0,0,0,.35); transition-duration: 70ms; }
+    .plate--upload:active .plate__content { transform: translateY(calc(4.5 * var(--u))); }
+    .plate--upload:focus-visible { outline-offset: 5px; }
+
+    /* Plat baja kecil ‹ 13 · 15 › */
+    .plate--nav {
+      --s: clamp(52px, 126 / 1984 * 100cqw, 126px);
+      width: var(--s); height: calc(var(--s) * 152 / 126); border-radius: calc(var(--s) * .04);
+      background: rgba(255,255,255,.12); color: var(--steel-dark-text);
+      box-shadow: calc(var(--s) * .05) calc(var(--s) * .06) calc(var(--s) * .14) rgba(0,0,0,.5);
+    }
+    .plate--nav .plate__face { inset: 6%; background: var(--steel-dark); }
+    .plate--nav .plate__content { display: flex; flex-direction: column; align-items: center; gap: calc(var(--s) * .02); }
+    .plate--nav .plate__num { font: 400 calc(var(--s) * .46) / 1 "Instrument Serif", serif; }
+    .plate--nav .plate__arrow { width: calc(var(--s) * .24); height: calc(var(--s) * .24); }
+    .plate--nav .plate__bolt { width: calc(var(--s) * .12); height: calc(var(--s) * .12); }
+    .plate--nav .bolt-t { top: 9%; left: 50%; margin-left: calc(var(--s) * -.06); }
+    .plate--nav .bolt-b { bottom: 9%; left: 50%; margin-left: calc(var(--s) * -.06); }
+    @media (hover: hover) {
+      .plate--nav:not([aria-disabled="true"]):hover { transform: translateY(-2px); box-shadow: calc(var(--s) * .07) calc(var(--s) * .09) calc(var(--s) * .2) rgba(0,0,0,.5); }
+      .plate--nav:not([aria-disabled="true"]):hover .plate__face { background: #6a6d6e; }
+    }
+    .plate--nav:not([aria-disabled="true"]):active { transform: translateY(1px); box-shadow: 1px 2px 4px rgba(0,0,0,.55); transition-duration: 70ms; }
+    .plate--nav:not([aria-disabled="true"]):active .plate__face { background: #4c4f50; box-shadow: inset 0 3px 8px rgba(0,0,0,.4); }
+
+    /* ───────── Papan tugas ───────── */
+    .board { position: relative; padding: 8px 0 64px; }
+    .board::before { content: ""; position: absolute; inset: 0; background: var(--grain); mix-blend-mode: overlay; opacity: .35; pointer-events: none; }
+    .wrap { position: relative; width: min(1200px, 100% - 32px); margin-inline: auto; }
+
+    .board-head { display: grid; gap: 4px; padding: 8px 0 20px; }
+    .board-head h2 { margin: 0; font: 400 clamp(40px, 6vw, 64px) / 1 "Instrument Serif", serif; color: var(--ink); }
+    .board-head h2 em { font-style: italic; }
+    .board-head p { margin: 0; max-width: 70ch; color: var(--ink-2); font-size: 15px; }
+
+    /* Rel filter baja, menempel saat digulir. */
+    .rail {
+      position: sticky; top: 0; z-index: 20; margin: 0 -16px 24px; padding: 10px 16px;
+      background: linear-gradient(180deg, var(--steel-hi), var(--steel-lo));
+      box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 14px rgba(0,0,0,.25);
+    }
+    @media (min-width: 768px) { .rail { margin-inline: 0; border-radius: 6px; } }
+    .rail__inner { position: relative; z-index: 2; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .rail__inner::-webkit-scrollbar { display: none; }
+    .rail fieldset { display: contents; }
+    .chip { position: relative; flex: none; }
+    .chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .chip span {
+      display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 4px;
+      font: 600 14px/1 "Poppins", sans-serif; letter-spacing: .02em; color: var(--ink);
+      background: linear-gradient(180deg, #f3f5f5, #c9cdcd);
+      box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(0,0,0,.3);
+      transition: background-color var(--t-base), box-shadow var(--t-fast), transform var(--t-fast);
+    }
+    .chip small { font: 500 12px/1 "Plus Jakarta Sans", sans-serif; opacity: .7; }
+    @media (hover: hover) { .chip input:not(:checked):hover + span { background: linear-gradient(180deg, #fff, #d6dada); } }
+    .chip input:active + span { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+    .chip input:checked + span { background: var(--blue); color: #fff; box-shadow: inset 0 2px 5px rgba(0,0,0,.35); }
+    .chip input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    /* Panel papan gabus berbingkai aluminium. */
+    .panel {
+      position: relative; margin-bottom: 32px; padding: 12px; border-radius: 6px;
+      background: linear-gradient(135deg, #eef0f0 0%, #b9bebe 45%, #dfe2e2 60%, #a3a8a8 100%);
+      box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.7) inset;
+    }
+    .panel > .bolt { position: absolute; width: 14px; height: 14px; z-index: 3; }
+    .panel > .bolt img { width: 100%; height: 100%; display: block; }
+    .panel > .bolt:nth-of-type(1) { top: 3px; left: 3px; }
+    .panel > .bolt:nth-of-type(2) { top: 3px; right: 3px; }
+    .panel > .bolt:nth-of-type(3) { bottom: 3px; left: 3px; }
+    .panel > .bolt:nth-of-type(4) { bottom: 3px; right: 3px; }
+    .cork {
+      position: relative; padding: clamp(16px, 3vw, 28px); border-radius: 2px;
+      background-color: var(--cork);
+      background-image: var(--cork-flecks), var(--cork-specks), radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,.12), rgba(0,0,0,.12));
+      box-shadow: inset 0 2px 8px rgba(0,0,0,.45);
+    }
+    .panel__title {
+      display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; position: relative;
+      margin: 0 0 24px; padding: 6px 18px 8px; background: var(--paper);
+      box-shadow: 2px 4px 8px rgba(0,0,0,.35); transform: rotate(-.6deg);
+    }
+    .panel__title h3 { margin: 0; font: 400 clamp(36px, 5vw, 52px) / 1.05 "Instrument Serif", serif; color: #3a3a3a; }
+    .panel__title h3 i { font-style: italic; }
+    .panel__title p { margin: 0; font: 500 14px/1.3 "Plus Jakarta Sans", sans-serif; color: var(--ink-3); }
+
+    .group + .group { margin-top: 28px; }
+    .tape-label {
+      display: inline-block; margin: 0 0 14px; padding: 6px 12px 5px; border-radius: 2px;
+      background: linear-gradient(180deg, #2a2a2a, var(--label)); color: #f3f3f3;
+      font: 600 14px/1.2 "Poppins", sans-serif; letter-spacing: .08em; text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(0,0,0,.8), 0 -1px 0 rgba(255,255,255,.12);
+      box-shadow: 1px 2px 4px rgba(0,0,0,.4);
+    }
+    .cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); align-items: start; }
+
+    .card {
+      position: relative; padding: 22px 18px 14px; background: linear-gradient(180deg, var(--paper), #efece3);
+      box-shadow: 2px 4px 8px rgba(0,0,0,.35); border-radius: 1px;
+    }
+    .card:nth-child(2n) { transform: rotate(.5deg); }
+    .card:nth-child(3n) { transform: rotate(-.4deg); }
+    .card::before {
+      content: ""; position: absolute; top: -9px; left: 50%; width: 74px; height: 20px; margin-left: -37px;
+      background: rgba(238, 230, 200, .72); box-shadow: 0 1px 2px rgba(0,0,0,.15); transform: rotate(-2deg); z-index: 2;
+    }
+    .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .card__title { margin: 0; font: 400 28px/1.05 "Instrument Serif", serif; color: var(--blue-ink); }
+    .card__day { font: 500 12px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+    .task { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 10px 0; }
+    .task + .task { border-top: 1px dashed rgba(0,0,0,.2); }
+    .task__desc { margin: 0; font: 300 15px/1.45 "Plus Jakarta Sans", sans-serif; color: var(--ink); overflow-wrap: anywhere; }
+    .sticky {
+      display: grid; justify-items: center; width: 58px; padding: 6px 4px 5px; background: var(--sticky);
+      box-shadow: 2px 3px 4px rgba(0,0,0,.35); transform: rotate(-3.47deg);
+    }
+    .sticky__mon { font: italic 400 15px/1 "Instrument Serif", serif; color: #3a3a3a; }
+    .sticky__day { font: 400 34px/1 "Instrument Serif", serif; color: var(--red); }
+    .sticky.is-past { filter: grayscale(.9); opacity: .65; }
+    .card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--paper-edge); font-size: 12px; color: var(--ink-3); }
+    .link-btn {
+      display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25);
+      background: transparent; color: var(--ink); font: 600 13px/1 "Plus Jakarta Sans", sans-serif; text-decoration: none; cursor: pointer;
+      transition: background-color var(--t-fast);
+    }
+    @media (hover: hover) { .link-btn:hover { background: rgba(0,0,0,.06); } }
+    .link-btn:active { background: rgba(0,0,0,.12); }
+
+    .card--none { padding-bottom: 18px; }
+    .card--none .card__title { color: var(--ink-2); }
+    .stamp {
+      display: inline-block; margin-top: 6px; padding: 4px 10px; border: 2px solid var(--stamp); border-radius: 3px;
+      color: var(--stamp); font: 700 14px/1.2 "Poppins", sans-serif; letter-spacing: .08em; transform: rotate(-4deg); opacity: .85;
+    }
+    .card--none .card__foot { border: 0; padding-top: 4px; }
+
+    .empty-slots { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .empty-slots__label { font: 600 13px/1.2 "Plus Jakarta Sans", sans-serif; color: #fff7ea; text-shadow: 0 1px 2px rgba(0,0,0,.6); margin-right: 4px; }
+    .slot {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border-radius: 3px;
+      border: 2px dashed rgba(255,247,234,.85); background: rgba(40,24,10,.38); color: #fff7ea;
+      text-shadow: 0 1px 1px rgba(0,0,0,.5);
+      font: 600 14px/1 "Plus Jakarta Sans", sans-serif; text-decoration: none; cursor: pointer;
+      transition: background-color var(--t-fast), border-color var(--t-fast);
+    }
+    .slot svg { width: 16px; height: 16px; }
+    @media (hover: hover) { .slot:hover { background: rgba(40,24,10,.55); border-color: #fff7ea; } }
+    .slot:active { background: rgba(40,24,10,.68); }
+
+    .notice {
+      padding: 20px; background: var(--paper); box-shadow: 2px 4px 8px rgba(0,0,0,.3);
+      display: grid; gap: 12px; justify-items: start; max-width: 520px;
+    }
+    .board-empty { margin-bottom: 24px; transform: rotate(-.4deg); }
+    .notice h3 { margin: 0; font: 400 30px/1.1 "Instrument Serif", serif; }
+    .notice p { margin: 0; color: var(--ink-2); }
+
+    .skeleton { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+    .skeleton div { height: 150px; background: rgba(246,244,238,.55); box-shadow: 2px 4px 8px rgba(0,0,0,.2); animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+    #boardBody { transition: opacity var(--t-base); }
+    #boardBody[aria-busy="true"].is-dim { opacity: .5; }
+
+    .site-foot { background: #1b1b1b; color: #e9e9e9; padding: 20px 16px; text-align: center; font: 400 14px/1.6 "Instrument Serif", serif; }
+    .site-foot span { display: inline-block; margin: 0 10px; font-size: 18px; }
+
+    /* Halaman unggah sementara (batch 3) */
+    .upload-view { padding: 32px 0 64px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0ms !important; animation: none !important; }
+      .plate:hover, .plate:active { transform: none !important; }
+      .plate:hover .plate__bolt, .plate:active .plate__bolt { transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <img class="hero__img" id="heroImg" alt="" fetchpriority="high">
+    <h1 class="sr-only" id="heroTitle">We Remind You! Perkuliahan minggu ke</h1>
+    <p class="hero__week" id="heroWeek" aria-hidden="true"></p>
+    <button class="plate plate--nav hero__nav hero__nav--prev grain" id="prevWeek" type="button">
+      <span class="plate__face" aria-hidden="true"></span>
+      <span class="plate__bolt bolt-t" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+      <span class="plate__content" aria-hidden="true">
+        <svg class="plate__arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 4 7 12l8.5 8z"/></svg>
+        <span class="plate__num" id="prevNum"></span>
+      </span>
+      <span class="plate__bolt bolt-b" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+    </button>
+    <button class="plate plate--nav hero__nav hero__nav--next grain" id="nextWeek" type="button">
+      <span class="plate__face" aria-hidden="true"></span>
+      <span class="plate__bolt bolt-t" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+      <span class="plate__content" aria-hidden="true">
+        <svg class="plate__arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 4 17 12l-8.5 8z"/></svg>
+        <span class="plate__num" id="nextNum"></span>
+      </span>
+      <span class="plate__bolt bolt-b" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+    </button>
+  </header>
+
+  <section class="upload-band grain" aria-label="Unggah tugas">
+    <span class="upload-band__stripe" aria-hidden="true"></span>
+    <span class="upload-band__stripe" aria-hidden="true"></span>
+    <span class="upload-band__stripe" aria-hidden="true"></span>
+    <span class="upload-band__stripe" aria-hidden="true"></span>
+    <span class="upload-band__stripe" aria-hidden="true"></span>
+    <a class="plate plate--upload grain" id="uploadBtn" href="#unggah">
+      <span class="plate__face" aria-hidden="true"></span>
+      <span class="plate__content">UPLOAD TUGAS</span>
+      <span class="plate__bolt bolt-tl" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+      <span class="plate__bolt bolt-tr" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+      <span class="plate__bolt bolt-bl" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+      <span class="plate__bolt bolt-br" aria-hidden="true"><img data-asset="baut.png" alt=""></span>
+    </a>
+  </section>
+
+  <main id="main">
+    <section class="board" id="boardView" aria-labelledby="boardTitle">
+      <div class="wrap">
+        <div class="board-head">
+          <h2 id="boardTitle">Papan tugas</h2>
+          <p id="boardRange">Memuat papan tugas…</p>
+        </div>
+        <nav class="rail grain" aria-label="Filter semester">
+          <div class="rail__inner" id="semFilter" role="radiogroup" aria-label="Semester"></div>
+        </nav>
+        <div id="boardBody" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="upload-view" id="uploadView" hidden aria-labelledby="uploadTitle">
+      <div class="wrap">
+        <div class="notice">
+          <h3 id="uploadTitle">Form unggah tugas</h3>
+          <p id="uploadInfo">Form unggah sedang dibangun (batch 3).</p>
+          <button class="link-btn" type="button" id="backToBoard">Kembali ke papan tugas</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <span>@industrialdesignits</span><span>@himaideits</span><span>HIMA IDE ITS</span>
+  </footer>
+
+  <template id="boltTpl"><span class="bolt" aria-hidden="true"><img data-asset="baut.png" alt=""></span></template>
+
+  <script>
+    (function () {
+      "use strict";
+      const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const MONTHS_LONG = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const DAYS_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+      const STORE_KEY = "wry.semester";
+
+      let boot = {};
+      try { boot = JSON.parse(document.getElementById("boot").textContent); } catch (_) { boot = {}; }
+      const assetBase = (boot.assetBase || "").replace(/\/+$/, "");
+      const asset = (name) => assetBase + "/" + name;
+
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, attrs, children) => {
+        const node = document.createElement(tag);
+        if (attrs) for (const k in attrs) {
+          if (k === "class") node.className = attrs[k];
+          else if (k === "text") node.textContent = attrs[k];
+          else if (k === "html") node.innerHTML = attrs[k];
+          else if (k.startsWith("on")) node.addEventListener(k.slice(2), attrs[k]);
+          else if (attrs[k] !== false && attrs[k] != null) node.setAttribute(k, attrs[k]);
+        }
+        (children || []).forEach((c) => c && node.append(c));
+        return node;
+      };
+
+      // ───── Aset ─────
+      const mobile = window.matchMedia("(max-width: 767px)");
+      function setHeroImage() {
+        $("heroImg").src = asset(mobile.matches ? "hero-mobile.webp" : "hero-desktop.webp");
+      }
+      setHeroImage();
+      mobile.addEventListener("change", setHeroImage);
+      document.querySelectorAll("img[data-asset]").forEach((img) => { img.src = asset(img.dataset.asset); });
+
+      // ───── Server (google.script.run dibungkus Promise) ─────
+      function call(fn, ...args) {
+        return new Promise((resolve, reject) => {
+          google.script.run.withSuccessHandler(resolve).withFailureHandler((e) => reject(e instanceof Error ? e : new Error(String(e && e.message || e))))[fn](...args);
+        });
+      }
+
+      // ───── Navigasi: google.script.history di GAS, URL biasa saat dev ─────
+      const gasHistory = window.google && google.script && google.script.history && google.script.url;
+      const Nav = {
+        read() {
+          return new Promise((resolve) => {
+            if (gasHistory) google.script.url.getLocation((loc) => resolve(fromLocation(loc.parameter || {}, loc.hash || "")));
+            else resolve(fromLocation(Object.fromEntries(new URLSearchParams(location.search)), location.hash.slice(1)));
+          });
+        },
+        push(state, replace) {
+          const params = state.week ? { week: String(state.week) } : {};
+          const hash = state.view === "unggah" ? "unggah" : "";
+          if (gasHistory) (replace ? google.script.history.replace : google.script.history.push)(state, params, hash);
+          else {
+            const url = location.pathname + (state.week ? "?week=" + state.week : "") + (hash ? "#" + hash : "");
+            history[replace ? "replaceState" : "pushState"](state, "", url);
+          }
+        },
+        onChange(fn) {
+          if (gasHistory) google.script.history.setChangeHandler((e) => fn(fromLocation((e.location && e.location.parameter) || {}, (e.location && e.location.hash) || "")));
+          else window.addEventListener("popstate", () => Nav.read().then(fn));
+        },
+      };
+      function fromLocation(params, hash) {
+        const week = Number(params.week);
+        return { week: Number.isInteger(week) && week > 0 ? week : null, view: hash === "unggah" ? "unggah" : "board" };
+      }
+
+      // ───── Format tanggal ─────
+      const parseIso = (iso) => { const p = iso.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+      const todayIso = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); // WIB
+      function shortDate(iso) { const d = parseIso(iso); return DAYS_SHORT[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()]; }
+      function longDate(iso) { const d = parseIso(iso); return d.getDate() + " " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear(); }
+      function addDays(iso, n) { const d = parseIso(iso); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+      function ago(isoTime) {
+        const t = Date.parse(isoTime);
+        if (!t) return "";
+        const s = Math.max(0, (Date.now() - t) / 1000);
+        if (s < 60) return "baru saja";
+        if (s < 3600) return Math.floor(s / 60) + " mnt lalu";
+        if (s < 86400) return Math.floor(s / 3600) + " jam lalu";
+        if (s < 7 * 86400) return Math.floor(s / 86400) + " hari lalu";
+        const d = new Date(t);
+        return d.getDate() + " " + MONTHS[d.getMonth()];
+      }
+
+      // ───── State ─────
+      const state = { week: null, view: "board", data: null, semester: "all", loading: false };
+      const cache = new Map();
+      try { state.semester = localStorage.getItem(STORE_KEY) || "all"; } catch (_) { /* penyimpanan diblokir */ }
+
+      // ───── Hero & navigasi minggu ─────
+      function renderHero(d) {
+        const week = $("heroWeek");
+        week.textContent = d.week;
+        week.classList.remove("is-changing");
+        $("heroTitle").textContent = "We Remind You! Perkuliahan minggu ke " + d.week;
+        setNav($("prevWeek"), $("prevNum"), d.week - 1, d.week > d.minWeek, "Lihat minggu ke ");
+        setNav($("nextWeek"), $("nextNum"), d.week + 1, d.week < d.maxWeek, "Lihat minggu ke ");
+      }
+      function setNav(btn, num, week, enabled, label) {
+        num.textContent = enabled ? week : "";
+        btn.setAttribute("aria-disabled", enabled ? "false" : "true");
+        btn.setAttribute("aria-label", enabled ? label + week : (btn.id === "prevWeek" ? "Tidak ada minggu sebelumnya" : "Belum ada minggu berikutnya"));
+        btn.dataset.week = enabled ? week : "";
+      }
+      ["prevWeek", "nextWeek"].forEach((id) => $(id).addEventListener("click", (e) => {
+        const w = Number(e.currentTarget.dataset.week);
+        if (!w || state.loading) return;
+        go({ week: w, view: "board" });
+      }));
+
+      // ───── Filter semester ─────
+      function renderFilter(d) {
+        const host = $("semFilter");
+        host.textContent = "";
+        const options = [{ value: "all", label: "Semua" }].concat(d.semesters.map((s) => ({ value: String(s.semester), label: "Semester " + s.semester, count: countTasks(s) })));
+        if (!options.some((o) => o.value === state.semester)) state.semester = "all";
+        options.forEach((o) => {
+          const input = el("input", { type: "radio", name: "semester", value: o.value });
+          input.checked = o.value === state.semester;
+          input.addEventListener("change", () => {
+            state.semester = o.value;
+            try { localStorage.setItem(STORE_KEY, o.value); } catch (_) { /* abaikan */ }
+            renderPanels(state.data);
+          });
+          const label = el("span", null, [document.createTextNode(o.label), o.count != null ? el("small", { text: o.count + " tugas" }) : null]);
+          host.append(el("label", { class: "chip" }, [input, label]));
+        });
+      }
+      const countTasks = (s) => s.matkul.reduce((n, g) => n + g.classes.reduce((m, c) => m + c.tasks.length, 0), 0);
+      const countEmpty = (s) => s.matkul.reduce((n, g) => n + g.classes.filter((c) => c.status === "kosong").length, 0);
+
+      // ───── Papan ─────
+      function renderBoard(d) {
+        $("boardTitle").innerHTML = "Papan tugas <em>minggu " + d.week + "</em>";
+        const deadlineStart = addDays(d.end, 3), deadlineEnd = addDays(d.end, 7);
+        $("boardRange").textContent = "Tugas yang dilaporkan " + shortDate(d.start) + " – " + shortDate(d.end) +
+          ", dengan deadline sekitar " + shortDate(deadlineStart) + " – " + shortDate(deadlineEnd) + ".";
+        renderFilter(d);
+        renderPanels(d);
+      }
+
+      function renderPanels(d) {
+        const body = $("boardBody");
+        body.textContent = "";
+        const list = d.semesters.filter((s) => state.semester === "all" || String(s.semester) === state.semester);
+        const reported = list.some((s) => s.matkul.some((g) => g.classes.some((c) => c.status !== "kosong")));
+        if (!reported) body.append(el("div", { class: "notice board-empty grain" }, [
+          el("h3", { text: "Belum ada laporan minggu " + d.week }),
+          el("p", { text: "Perwakilan kelas bisa mulai mengunggah tugas. Pilih kelasmu di bawah, atau tekan tombol berikut." }),
+          el("a", { class: "link-btn", href: "#unggah", text: "Upload tugas", onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah" }); } }),
+        ]));
+        list.forEach((s) => body.append(panel(s, d)));
+      }
+
+      function panel(s, d) {
+        const cork = el("div", { class: "cork" });
+        const tasks = countTasks(s), empty = countEmpty(s);
+        cork.append(el("div", { class: "panel__title grain" }, [
+          el("h3", { html: "<i>S</i>emest<i>e</i>r " + s.semester }),
+          el("p", { text: tasks + " tugas · " + (empty ? empty + " kelas belum ada info" : "semua kelas sudah melapor") }),
+        ]));
+        s.matkul.forEach((g) => cork.append(group(s, g, d)));
+        const wrap = el("section", { class: "panel", "aria-label": "Semester " + s.semester });
+        for (let i = 0; i < 4; i++) wrap.append($("boltTpl").content.firstElementChild.cloneNode(true));
+        wrap.querySelectorAll("img[data-asset]").forEach((img) => { img.src = asset(img.dataset.asset); });
+        wrap.append(cork);
+        return wrap;
+      }
+
+      function group(s, g, d) {
+        const filled = g.classes.filter((c) => c.status !== "kosong");
+        const empty = g.classes.filter((c) => c.status === "kosong");
+        const node = el("div", { class: "group" }, [el("h4", { class: "tape-label", text: g.name })]);
+        if (filled.length) node.append(el("div", { class: "cards" }, filled.map((c) => c.status === "ada" ? taskCard(s, g, c) : noneCard(g, c))));
+        if (empty.length) {
+          const row = el("div", { class: "empty-slots" }, [el("span", { class: "empty-slots__label", text: filled.length ? "Belum ada info:" : "Belum ada info" })]);
+          empty.forEach((c) => row.append(el("a", {
+            class: "slot", href: "#unggah",
+            "aria-label": "Isi tugas " + g.name + " kelas " + c.kelas,
+            onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah", prefill: { semester: s.semester, matkul: g.name, kelas: c.kelas } }); },
+            html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+          }, [document.createTextNode("Kelas " + c.kelas)])));
+          node.append(row);
+        }
+        return node;
+      }
+
+      function taskCard(s, g, c) {
+        const today = todayIso();
+        const latest = c.tasks.reduce((a, t) => (t.diubah > a.diubah ? t : a), c.tasks[0]);
+        return el("article", { class: "card grain", "aria-label": g.name + " kelas " + c.kelas }, [
+          el("div", { class: "card__head" }, [
+            el("h5", { class: "card__title", text: "Kelas " + c.kelas }),
+            el("span", { class: "card__day", text: c.hari }),
+          ]),
+          ...c.tasks.map((t) => el("div", { class: "task" }, [
+            el("p", { class: "task__desc", text: t.deskripsi }),
+            sticky(t.deadline, t.deadline < today),
+          ])),
+          el("div", { class: "card__foot" }, [
+            el("span", { text: "oleh " + latest.pengisi + " · " + ago(latest.diubah) }),
+            el("a", { class: "link-btn", href: "#unggah", text: "Edit", "aria-label": "Edit tugas " + g.name + " kelas " + c.kelas,
+              onclick: (e) => { e.preventDefault(); go({ week: state.week, view: "unggah", prefill: { semester: s.semester, matkul: g.name, kelas: c.kelas } }); } }),
+          ]),
+        ]);
+      }
+
+      function noneCard(g, c) {
+        return el("article", { class: "card card--none grain", "aria-label": g.name + " kelas " + c.kelas + ": tidak ada tugas" }, [
+          el("div", { class: "card__head" }, [
+            el("h5", { class: "card__title", text: "Kelas " + c.kelas }),
+            el("span", { class: "card__day", text: c.hari }),
+          ]),
+          el("span", { class: "stamp", text: "TIDAK ADA TUGAS" }),
+          el("div", { class: "card__foot" }, [el("span", { text: "dilaporkan " + c.reportedBy + " · " + ago(c.reportedAt) })]),
+        ]);
+      }
+
+      function sticky(iso, past) {
+        const d = parseIso(iso);
+        return el("div", { class: "sticky" + (past ? " is-past" : ""), title: "Deadline " + longDate(iso) + (past ? " (sudah lewat)" : "") }, [
+          el("span", { class: "sticky__mon", text: MONTHS[d.getMonth()] }),
+          el("span", { class: "sticky__day", text: String(d.getDate()) }),
+          el("span", { class: "sr-only", text: "Deadline " + longDate(iso) + (past ? ", sudah lewat" : "") }),
+        ]);
+      }
+
+      function renderSkeleton() {
+        $("boardBody").innerHTML = '<div class="panel"><div class="cork"><div class="skeleton"><div></div><div></div><div></div></div></div></div>';
+      }
+
+      function renderError(message, retry) {
+        const body = $("boardBody");
+        body.textContent = "";
+        body.append(el("div", { class: "notice", role: "alert" }, [
+          el("h3", { text: "Papan tugas belum bisa dimuat" }),
+          el("p", { text: message }),
+          el("button", { class: "link-btn", type: "button", text: "Coba lagi", onclick: retry }),
+        ]));
+      }
+
+      // ───── Alur ─────
+      async function loadWeek(week) {
+        const key = week || "current";
+        if (cache.has(key)) return cache.get(key);
+        const data = await call("getBoard", week || null);
+        cache.set(data.week, data);
+        if (!week) cache.set("current", data);
+        return data;
+      }
+
+      async function showBoard(week) {
+        const body = $("boardBody");
+        state.loading = true;
+        if (!state.data) renderSkeleton();
+        else {
+          $("heroWeek").classList.add("is-changing");
+          body.setAttribute("aria-busy", "true");
+          var dimTimer = setTimeout(() => body.classList.add("is-dim"), 150); // Hindari kedip untuk respons cepat.
+        }
+        try {
+          const d = await loadWeek(week);
+          state.data = d;
+          state.week = d.week;
+          renderHero(d);
+          renderBoard(d);
+        } catch (err) {
+          if (!state.data) $("boardRange").textContent = "";
+          renderError("Periksa koneksi internet, lalu coba lagi. (" + err.message + ")", () => showBoard(week));
+          $("heroWeek").classList.remove("is-changing");
+        } finally {
+          clearTimeout(dimTimer);
+          body.removeAttribute("aria-busy");
+          body.classList.remove("is-dim");
+          state.loading = false;
+        }
+      }
+
+      function showView(view) {
+        $("boardView").hidden = view !== "board";
+        $("uploadView").hidden = view !== "unggah";
+      }
+
+      function go(next, replace) {
+        state.view = next.view;
+        state.prefill = next.prefill || null;
+        Nav.push({ week: next.week, view: next.view }, replace);
+        apply(next);
+      }
+
+      function apply(next) {
+        showView(next.view);
+        if (next.view === "unggah") {
+          const p = state.prefill;
+          $("uploadInfo").textContent = "Form unggah sedang dibangun (batch 3)." + (p ? " Pilihan: Semester " + p.semester + " · " + p.matkul + " - " + p.kelas + " · minggu " + next.week + "." : "");
+          $("uploadTitle").focus({ preventScroll: true });
+          window.scrollTo({ top: $("uploadView").offsetTop - 16 });
+          if (!state.data) showBoard(next.week);
+          return;
+        }
+        if (!state.data || next.week !== state.week || !next.week) showBoard(next.week);
+      }
+
+      $("uploadBtn").addEventListener("click", (e) => { e.preventDefault(); go({ week: state.week, view: "unggah" }); });
+      $("backToBoard").addEventListener("click", () => go({ week: state.week, view: "board" }));
+      $("uploadTitle").tabIndex = -1;
+
+      if (boot.ready === false) {
+        renderError("Sistem belum disiapkan admin. Silakan coba lagi nanti.", () => location.reload());
+        return;
+      }
+      if (boot.initialWeek) $("heroWeek").textContent = boot.initialWeek; // Angka tampil sebelum data datang.
+      Nav.onChange(apply);
+      Nav.read().then(apply);
+    })();
+  </script>
+</body>
+</html>

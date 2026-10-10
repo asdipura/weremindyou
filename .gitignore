@@ -1,0 +1,9 @@
+# Pengaturan lokal Claude / editor
+.claude/
+.vscode/
+.DS_Store
+Thumbs.db
+__pycache__/
+
+# File sumber hero (besar); versi web ada di assets/*.webp
+Hero Image*.jpg
