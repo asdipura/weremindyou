@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>WRY Backoffice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <script type="application/json" id="boot"><?!= boot ?></script>
+  <style>
+    :root {
+      --ink: #1d1d1b; --ink-2: #4b4b47; --ink-3: #6b6b66;
+      --paper: #f6f4ee; --paper-2: #efece3; --line: #d9d4c6;
+      --blue: #0381b9; --blue-hover: #0790cc; --blue-press: #036e9e; --blue-ink: #0476a3;
+      --green: #2f7a4d; --green-bg: #e3f1e7; --red: #b3261e; --red-bg: #fbe9e7; --amber-bg: #fff4c2; --amber: #8a6200;
+      --steel-hi: #e6e9e9; --steel-lo: #a7acac;
+      --focus: #ffe14d;
+      --ease-out: cubic-bezier(.2, .8, .2, 1);
+      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: #2b2b2e; color: var(--ink); font: 400 15px/1.5 "Plus Jakarta Sans", system-ui, sans-serif; }
+    .backdrop { position: fixed; inset: 0; z-index: -1; background: #2b2b2e var(--bg-wall, none) center / cover no-repeat; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .grain { position: relative; isolation: isolate; }
+    .grain::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: var(--grain); mix-blend-mode: overlay; opacity: .4; border-radius: inherit; }
+    .grain > * { position: relative; z-index: 2; }
+    .wrap { width: min(1120px, 100% - 24px); margin-inline: auto; }
+
+    /* ───────── Rel atas (baja) ───────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      background: linear-gradient(180deg, var(--steel-hi), var(--steel-lo));
+      box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 14px rgba(0,0,0,.35);
+    }
+    .topbar__inner { display: flex; align-items: center; gap: 12px; min-height: 60px; flex-wrap: wrap; padding: 8px 0; }
+    .brand { margin: 0; font: 400 26px/1 "Instrument Serif", serif; white-space: nowrap; }
+    .brand i { font-style: italic; }
+    .brand small { margin-left: 6px; font: 600 11px/1 "Poppins", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); vertical-align: middle; }
+    .who { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; color: var(--ink-2); }
+    .who__email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34vw; }
+    .role { padding: 3px 8px; border-radius: 3px; font: 600 11px/1.2 "Poppins", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--ink); }
+    .role--design { background: var(--blue); }
+
+    /* ───────── Tombol ───────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 14px;
+      border: 1px solid rgba(0,0,0,.28); border-radius: 4px; background: #fffdf8; cursor: pointer; text-decoration: none;
+      font: 600 13px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink); white-space: nowrap;
+      transition: background-color 120ms, transform 120ms var(--ease-out);
+    }
+    .btn svg { width: 16px; height: 16px; flex: none; }
+    @media (hover: hover) { .btn:hover { background: #fff; border-color: rgba(0,0,0,.45); } }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled, .btn[aria-busy="true"] { opacity: .6; cursor: progress; }
+    .btn--primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    @media (hover: hover) { .btn--primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); } }
+    .btn--primary:active { background: var(--blue-press); }
+    .btn--danger { background: var(--red); border-color: var(--red); color: #fff; }
+    @media (hover: hover) { .btn--danger:hover { background: #9a1f18; border-color: #9a1f18; } }
+    .btn--ghost { border-color: transparent; background: transparent; }
+    @media (hover: hover) { .btn--ghost:hover { background: rgba(0,0,0,.06); border-color: transparent; } }
+    .btn--big { min-height: 52px; width: 100%; font: 700 16px/1 "Poppins", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+
+    /* ───────── Login ───────── */
+    .login { min-height: 100vh; display: grid; place-items: center; padding: 32px 12px; }
+    .clipboard { position: relative; width: min(460px, 100%); padding: 34px 12px 12px; border-radius: 10px; background: linear-gradient(160deg, #a77a4c, #8a5f36 60%, #7a5230); box-shadow: 0 14px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25); }
+    .clipboard__clip { position: absolute; top: -14px; left: 50%; width: 140px; height: 44px; margin-left: -70px; z-index: 3; border-radius: 8px 8px 14px 14px; background: linear-gradient(180deg, #f1f3f3, #b4b9b9 55%, #8e9393); box-shadow: 0 4px 8px rgba(0,0,0,.45), inset 0 1px 0 #fff; }
+    .clipboard__clip::after { content: ""; position: absolute; left: 50%; top: 9px; width: 40px; height: 12px; margin-left: -20px; border-radius: 6px; background: #6c7171; box-shadow: inset 0 2px 3px rgba(0,0,0,.6); }
+    .sheet { padding: clamp(20px, 5vw, 32px); background: linear-gradient(180deg, var(--paper), var(--paper-2)); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    .sheet h1 { margin: 6px 0 6px; font: 400 44px/1 "Instrument Serif", serif; outline: none; }
+    .sheet h1 i { font-style: italic; }
+    .lead { margin: 0 0 22px; color: var(--ink-2); }
+    .field { margin: 0 0 18px; }
+    .field__label { display: block; margin-bottom: 8px; font-weight: 600; }
+    .field__hint { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); }
+    .field__error { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--red); }
+    .field__hint:empty, .field__error:empty { display: none; }
+    .input {
+      display: block; width: 100%; min-height: 48px; padding: 10px 12px; border-radius: 4px; border: 1.5px solid #8e8a7e; background: #fffdf8; font-size: 16px;
+      transition: border-color 120ms, box-shadow 120ms;
+    }
+    .input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(3,129,185,.25); }
+    .input[aria-invalid="true"] { border-color: var(--red); }
+    .input--code { font: 600 26px/1 "Poppins", sans-serif; letter-spacing: .4em; text-align: center; }
+    textarea.input { min-height: 80px; resize: vertical; }
+    select.input { appearance: none; padding-right: 36px; background: #fffdf8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231d1d1b' stroke-width='2.2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 18px; }
+    .row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .link { background: none; border: 0; padding: 4px 0; color: var(--blue-ink); font-weight: 600; text-decoration: underline; cursor: pointer; }
+    .link:disabled { color: var(--ink-3); text-decoration: none; cursor: default; }
+
+    .callout { margin: 0 0 18px; padding: 12px 14px; border-left: 5px solid #d9a400; background: var(--amber-bg); }
+    .callout--error { border-color: var(--red); background: var(--red-bg); }
+    .callout--ok { border-color: var(--green); background: var(--green-bg); }
+    .callout p { margin: 0; }
+    .callout strong { display: block; margin-bottom: 2px; }
+
+    /* ───────── Konsol ───────── */
+    .console { padding: 20px 0 64px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .weekpick { display: flex; align-items: center; gap: 6px; }
+    .weekpick .input { min-height: 40px; width: auto; max-width: 100%; padding-block: 6px; font-size: 14px; border-color: transparent; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
+    .weekpick .btn { width: 40px; padding: 0; }
+    .tabs { display: flex; gap: 6px; margin-left: auto; padding: 4px; border-radius: 6px; background: rgba(0,0,0,.35); }
+    .tab {
+      min-height: 40px; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; cursor: pointer;
+      font: 600 14px/1 "Poppins", sans-serif; color: #e9e7e1;
+    }
+    @media (hover: hover) { .tab:hover { background: rgba(255,255,255,.1); } }
+    .tab[aria-selected="true"] { background: var(--blue); color: #fff; box-shadow: inset 0 2px 5px rgba(0,0,0,.3); }
+    @media (max-width: 700px) { .tabs { margin-left: 0; width: 100%; } .tab { flex: 1; padding: 0 8px; } }
+    .range { width: 100%; margin: -6px 0 0; color: #d4d2cc; font-size: 13px; }
+
+    .panel { margin-bottom: 18px; padding: clamp(16px, 3vw, 24px); background: linear-gradient(180deg, var(--paper), var(--paper-2)); box-shadow: 0 6px 16px rgba(0,0,0,.35); border-radius: 2px; }
+    .panel h2 { margin: 0 0 4px; font: 400 32px/1.1 "Instrument Serif", serif; }
+    .panel h2 i { font-style: italic; }
+    .panel__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+    .panel__sub { margin: 0; color: var(--ink-3); font-size: 13px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .stat { padding: 14px 16px; background: linear-gradient(180deg, var(--paper), var(--paper-2)); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+    .stat__value { font: 700 30px/1 "Poppins", sans-serif; }
+    .stat__value small { font: 600 16px/1 "Poppins", sans-serif; color: var(--ink-3); }
+    .stat__label { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+    .stat--warn .stat__value { color: var(--red); }
+
+    /* Pemisah hari: ───── SENIN ───── (sama dengan papan tugas) */
+    .day + .day { margin-top: 22px; }
+    .day__label {
+      display: flex; align-items: center; gap: 12px; margin: 0 0 10px;
+      font: 600 12px/1 "Poppins", sans-serif; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2);
+    }
+    .day__label::before, .day__label::after { content: ""; flex: 1; height: 1.5px; background: #c9c3b3; }
+    .mk { display: grid; grid-template-columns: minmax(150px, 240px) 1fr; gap: 6px 14px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+    .day__label + .mk { border-top: 0; }
+    @media (max-width: 640px) { .mk { grid-template-columns: 1fr; } }
+    .mk__name { margin: 0; font: 400 21px/1.15 "Instrument Serif", serif; color: var(--blue-ink); }
+    .mk__classes { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; line-height: 1.3; }
+    .pill--missing { background: #fbe1dd; color: #8c1d18; border: 1px dashed #d79b93; }
+    .pill--ada { background: #dcecf4; color: var(--blue-ink); }
+    .pill--ok { background: var(--green-bg); color: var(--green); }
+    .pill--muted { background: #e9e6dd; color: var(--ink-2); }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .filters .input { width: auto; min-height: 40px; padding-block: 6px; font-size: 14px; }
+    .filters .input[type="search"] { flex: 1 1 200px; }
+    .check { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px; cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--blue); }
+
+    .task-row { padding: 14px 0; border-top: 1px solid var(--line); }
+    .task-row:first-of-type { border-top: 0; }
+    .task-row.is-deleted .task-row__desc { text-decoration: line-through; color: var(--ink-3); }
+    .task-row__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+    .task-row__title { margin: 0; font: 400 22px/1.15 "Instrument Serif", serif; color: var(--blue-ink); }
+    .task-row__meta { font-size: 12px; color: var(--ink-3); }
+    .task-row__desc { margin: 6px 0 0; overflow-wrap: anywhere; }
+    .task-row__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .task-row__edit { display: grid; gap: 10px; margin-top: 10px; grid-template-columns: 1fr 180px; align-items: start; }
+    @media (max-width: 640px) { .task-row__edit { grid-template-columns: 1fr; } }
+    .badge { padding: 2px 7px; border-radius: 3px; font: 600 11px/1.4 "Poppins", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .badge--ada { background: #dcecf4; color: var(--blue-ink); }
+    .badge--tidak-ada { background: var(--green-bg); color: var(--green); }
+    .badge--dihapus { background: #e9e6dd; color: var(--ink-3); }
+    .history { margin: 10px 0 0; padding: 10px 12px; list-style: none; background: rgba(255,255,255,.6); border: 1px solid var(--line); font-size: 13px; }
+    .history li + li { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+    .history time { font-weight: 600; }
+    .empty { padding: 18px 0; color: var(--ink-2); }
+    .loading { padding: 18px 0; color: var(--ink-2); }
+
+    .export-actions { margin: 0 0 16px; }
+    .slides { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+    .slide { margin: 0; display: grid; gap: 6px; }
+    .slide img { display: block; width: 100%; height: auto; aspect-ratio: 1080 / 1350; background: #ddd8cb; box-shadow: 0 3px 8px rgba(0,0,0,.3); }
+    .slide figcaption { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 13px; font-weight: 600; }
+    .slide figcaption .btn { min-height: 32px; padding: 0 8px; }
+    .caption { min-height: 220px; font: 400 14px/1.5 "Plus Jakarta Sans", sans-serif; }
+    .settings { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .kv { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 14px; }
+    .kv dt { color: var(--ink-3); }
+    .kv dd { margin: 0; overflow-wrap: anywhere; }
+    .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #fffdf8; border: 1px solid var(--line); }
+    .switch strong { display: block; }
+    .switch span { font-size: 13px; color: var(--ink-3); }
+    .matkul-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .matkul-table th, .matkul-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .matkul-table th { font-weight: 600; color: var(--ink-2); }
+    .table-scroll { overflow-x: auto; }
+
+    .dialog { width: min(460px, 100% - 32px); padding: 0; border: 0; background: transparent; }
+    .dialog::backdrop { background: rgba(20,20,18,.6); }
+    .dialog .sheet { box-shadow: 0 16px 40px rgba(0,0,0,.45); }
+    .dialog h2 { margin: 0 0 8px; font: 400 30px/1.1 "Instrument Serif", serif; }
+    .dialog p { margin: 0 0 18px; color: var(--ink-2); overflow-wrap: anywhere; }
+    .dialog__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 20px; z-index: 50; transform: translateX(-50%); max-width: calc(100% - 32px);
+      padding: 12px 16px; border-radius: 4px; background: #1b1b1b; color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.4); font-size: 14px;
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <!-- ───────── Login ───────── -->
+  <main class="login" id="loginView" hidden>
+    <div class="clipboard">
+      <span class="clipboard__clip" aria-hidden="true"></span>
+      <div class="sheet grain">
+        <div>
+          <h1 id="loginTitle" tabindex="-1">Masuk <i>backoffice</i></h1>
+          <p class="lead" id="loginLead">Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.</p>
+          <div id="loginAlert"></div>
+
+          <form id="emailForm" novalidate>
+            <div class="field">
+              <label class="field__label" for="email">Email</label>
+              <input class="input" id="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="emailErr">
+              <p class="field__error" id="emailErr"></p>
+            </div>
+            <button class="btn btn--primary btn--big" type="submit" id="sendBtn">Kirim kode</button>
+          </form>
+
+          <form id="codeForm" novalidate hidden>
+            <div class="field">
+              <label class="field__label" for="code">Kode 6 angka</label>
+              <input class="input input--code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-describedby="codeHint codeErr">
+              <p class="field__hint" id="codeHint"></p>
+              <p class="field__error" id="codeErr"></p>
+            </div>
+            <button class="btn btn--primary btn--big" type="submit" id="verifyBtn">Masuk</button>
+            <div class="row-actions">
+              <button class="link" type="button" id="resendBtn">Kirim ulang kode</button>
+              <button class="link" type="button" id="changeEmail">Ganti email</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ───────── Konsol ───────── -->
+  <div id="appView" hidden>
+    <header class="topbar grain">
+      <div class="wrap topbar__inner">
+        <p class="brand">We Remind <i>You!</i> <small>Backoffice</small></p>
+        <div class="who">
+          <span class="role" id="roleBadge"></span>
+          <span class="who__email" id="whoEmail"></span>
+          <button class="btn btn--ghost" type="button" id="logoutBtn">Keluar</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="console wrap">
+      <div class="toolbar">
+        <div class="weekpick">
+          <button class="btn" type="button" id="weekPrev" aria-label="Minggu sebelumnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <label class="sr-only" for="weekSel">Minggu</label>
+          <select class="input" id="weekSel"></select>
+          <button class="btn" type="button" id="weekNext" aria-label="Minggu berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Bagian backoffice">
+          <button class="tab" role="tab" id="tab-status" aria-controls="pane-status" data-tab="status">Status</button>
+          <button class="tab" role="tab" id="tab-data" aria-controls="pane-data" data-tab="data">Data tugas</button>
+          <button class="tab" role="tab" id="tab-export" aria-controls="pane-export" data-tab="export">Export IG</button>
+          <button class="tab" role="tab" id="tab-settings" aria-controls="pane-settings" data-tab="settings">Pengaturan</button>
+        </div>
+        <p class="range" id="rangeText"></p>
+      </div>
+
+      <section id="pane-status" role="tabpanel" aria-labelledby="tab-status" tabindex="-1"></section>
+      <section id="pane-data" role="tabpanel" aria-labelledby="tab-data" tabindex="-1" hidden></section>
+      <section id="pane-export" role="tabpanel" aria-labelledby="tab-export" tabindex="-1" hidden></section>
+      <section id="pane-settings" role="tabpanel" aria-labelledby="tab-settings" tabindex="-1" hidden></section>
+    </main>
+  </div>
+
+  <dialog class="dialog" id="confirmDlg" aria-labelledby="confirmTitle">
+    <form method="dialog" class="sheet grain">
+      <div>
+        <h2 id="confirmTitle"></h2>
+        <p id="confirmText"></p>
+        <div class="dialog__actions">
+          <button class="btn" value="cancel" type="submit">Batal</button>
+          <button class="btn btn--danger" value="ok" type="submit" id="confirmOk"></button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="copyDlg" aria-labelledby="copyTitle">
+    <form method="dialog" class="sheet grain">
+      <div>
+        <h2 id="copyTitle">Salin daftar</h2>
+        <p>Browser memblokir salin otomatis. Teks sudah terpilih, tekan Ctrl+C / tahan lalu Salin.</p>
+        <textarea class="input" id="copyText" rows="8" readonly></textarea>
+        <div class="dialog__actions" style="margin-top:14px"><button class="btn btn--primary" value="ok" type="submit">Selesai</button></div>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    (function () {
+      "use strict";
+      const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const DAYS_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+      const DAY_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+      const TOKEN_KEY = "wry.admin";
+      const TAB_KEY = "wry.admin.tab";
+
+      let boot = {};
+      try { boot = JSON.parse(document.getElementById("boot").textContent); } catch (_) { boot = {}; }
+      const asset = (name) => (boot.assetBase || "").replace(/\/+$/, "") + "/" + name;
+      const narrow = window.matchMedia("(max-width: 767px)");
+      const setBg = () => document.documentElement.style.setProperty("--bg-wall", 'url("' + asset(narrow.matches ? "bg-wall-mobile.webp" : "bg-wall.webp") + '")');
+      setBg();
+      narrow.addEventListener("change", setBg);
+
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, attrs, children) => {
+        const node = document.createElement(tag);
+        if (attrs) for (const k in attrs) {
+          const v = attrs[k];
+          if (v === false || v == null) continue;
+          if (k === "class") node.className = v;
+          else if (k === "text") node.textContent = v;
+          else if (k === "html") node.innerHTML = v;
+          else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+          else node.setAttribute(k, v);
+        }
+        (children || []).forEach((c) => c != null && c !== false && node.append(c));
+        return node;
+      };
+      const store = {
+        get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+        set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* abaikan */ } },
+        del(k) { try { localStorage.removeItem(k); } catch (_) { /* abaikan */ } },
+      };
+
+      // ───── Format ─────
+      const parseIso = (iso) => { const p = iso.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+      const shortDate = (iso) => { if (!iso) return "—"; const d = parseIso(iso); return DAYS_SHORT[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()]; };
+      const dayShort = (hari) => hari ? hari.slice(0, 3) : "";
+      function stamp(isoTime) {
+        const t = Date.parse(isoTime);
+        if (!t) return "";
+        const d = new Date(t);
+        return DAYS_SHORT[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()] + ", " + String(d.getHours()).padStart(2, "0") + "." + String(d.getMinutes()).padStart(2, "0");
+      }
+
+      // ───── Server ─────
+      function call(fn, ...args) {
+        return new Promise((resolve, reject) => {
+          google.script.run.withSuccessHandler(resolve)
+            .withFailureHandler((e) => reject(e instanceof Error ? e : new Error(String((e && e.message) || e))))[fn](...args);
+        });
+      }
+      let session = null;
+      async function api(fn, ...args) {
+        try {
+          return await call(fn, session && session.token, ...args);
+        } catch (err) {
+          if (/SESI_HABIS/.test(err.message)) showLogin(err.message.replace(/^.*SESI_HABIS:\s*/, ""));
+          throw err;
+        }
+      }
+      const cleanError = (err) => String(err.message || err).replace(/^.*SESI_HABIS:\s*/, "").replace(/^Exception:\s*/, "");
+
+      let toastTimer;
+      function toast(message) {
+        const t = $("toast");
+        t.textContent = message;
+        t.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+      }
+
+      function confirmAction(title, text, okLabel) {
+        const dlg = $("confirmDlg");
+        $("confirmTitle").textContent = title;
+        $("confirmText").textContent = text;
+        $("confirmOk").textContent = okLabel;
+        dlg.returnValue = "";
+        dlg.showModal();
+        return new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue === "ok"), { once: true }));
+      }
+
+      async function busy(btn, label, work) {
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.textContent = label;
+        try { return await work(); } finally {
+          btn.disabled = false;
+          btn.removeAttribute("aria-busy");
+          btn.innerHTML = original;
+        }
+      }
+
+      // ───── Login ─────
+      let loginEmail = "";
+      let resendTimer;
+      function loginAlert(kind, title, text) {
+        const host = $("loginAlert");
+        host.textContent = "";
+        if (title) host.append(el("div", { class: "callout callout--" + kind, role: kind === "error" ? "alert" : "status" }, [el("strong", { text: title }), el("p", { text: text })]));
+      }
+      function showLogin(message) {
+        session = null;
+        store.del(TOKEN_KEY);
+        $("appView").hidden = true;
+        $("loginView").hidden = false;
+        $("emailForm").hidden = false;
+        $("codeForm").hidden = true;
+        loginAlert(message ? "error" : "", message ? "Silakan masuk lagi" : "", message || "");
+        $("email").value = loginEmail || store.get("wry.admin.email") || "";
+        $("email").focus();
+      }
+      function startResendCountdown(seconds) {
+        const btn = $("resendBtn");
+        let left = seconds;
+        clearInterval(resendTimer);
+        const tick = () => {
+          btn.disabled = left > 0;
+          btn.textContent = left > 0 ? "Kirim ulang kode (" + left + " dtk)" : "Kirim ulang kode";
+          left--;
+          if (left < -1) clearInterval(resendTimer);
+        };
+        tick();
+        resendTimer = setInterval(tick, 1000);
+      }
+      async function sendCode(btn) {
+        const value = $("email").value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          $("emailErr").textContent = "Tulis alamat email yang valid.";
+          $("email").setAttribute("aria-invalid", "true");
+          $("email").focus();
+          return;
+        }
+        loginEmail = value.toLowerCase();
+        try {
+          const res = await busy(btn, "Mengirim…", () => call("requestOtp", loginEmail));
+          store.set("wry.admin.email", loginEmail);
+          $("emailForm").hidden = true;
+          $("codeForm").hidden = false;
+          $("codeHint").textContent = "Dikirim ke " + loginEmail + ". Berlaku 10 menit.";
+          loginAlert("ok", "Cek email kamu", res.message);
+          $("code").value = "";
+          $("code").focus();
+          startResendCountdown(60);
+        } catch (err) {
+          loginAlert("error", "Kode belum terkirim", cleanError(err));
+        }
+      }
+      $("emailForm").addEventListener("submit", (e) => { e.preventDefault(); sendCode($("sendBtn")); });
+      $("email").addEventListener("input", () => { $("emailErr").textContent = ""; $("email").removeAttribute("aria-invalid"); });
+      $("resendBtn").addEventListener("click", async () => {
+        try {
+          await busy($("resendBtn"), "Mengirim…", () => call("requestOtp", loginEmail));
+          loginAlert("ok", "Kode baru dikirim", "Pakai kode terbaru; kode lama tidak berlaku.");
+          startResendCountdown(60);
+        } catch (err) { loginAlert("error", "Kode belum terkirim", cleanError(err)); }
+      });
+      $("changeEmail").addEventListener("click", () => { clearInterval(resendTimer); showLogin(""); });
+      $("code").addEventListener("input", () => {
+        $("code").value = $("code").value.replace(/\D/g, "").slice(0, 6);
+        $("codeErr").textContent = "";
+        $("code").removeAttribute("aria-invalid");
+        if ($("code").value.length === 6) $("codeForm").requestSubmit();
+      });
+      $("codeForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const code = $("code").value;
+        if (!/^\d{6}$/.test(code)) {
+          $("codeErr").textContent = "Kode terdiri dari 6 angka.";
+          $("code").setAttribute("aria-invalid", "true");
+          return;
+        }
+        if ($("verifyBtn").disabled) return;
+        try {
+          const res = await busy($("verifyBtn"), "Memeriksa…", () => call("verifyOtp", loginEmail, code));
+          clearInterval(resendTimer);
+          store.set(TOKEN_KEY, res.token);
+          session = { token: res.token, email: res.email, role: res.role, canEdit: res.role === "admin" };
+          enterApp();
+        } catch (err) {
+          $("codeErr").textContent = cleanError(err);
+          $("code").setAttribute("aria-invalid", "true");
+          $("code").select();
+        }
+      });
+      $("logoutBtn").addEventListener("click", async () => {
+        const token = session && session.token;
+        showLogin("");
+        loginAlert("ok", "Kamu sudah keluar", "Sampai jumpa!");
+        try { await call("adminLogout", token); } catch (_) { /* sesi lokal sudah dihapus */ }
+      });
+
+      // ───── Konsol ─────
+      const A = { week: null, currentWeek: null, maxWeek: null, tab: store.get(TAB_KEY) || "status", status: null, tasks: null, settings: null, onlyMissing: false, taskFilter: "aktif", query: "" };
+
+      function enterApp() {
+        $("loginView").hidden = true;
+        $("appView").hidden = false;
+        $("whoEmail").textContent = session.email;
+        $("roleBadge").textContent = session.role === "admin" ? "Admin" : "Tim design";
+        $("roleBadge").className = "role" + (session.role === "admin" ? "" : " role--design");
+        A.status = A.tasks = A.settings = A.export = null;
+        selectTab(A.tab, false);
+      }
+
+      document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab, true)));
+      document.querySelector(".tabs").addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        const tabs = [...document.querySelectorAll(".tab")];
+        const i = tabs.indexOf(document.activeElement);
+        const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+        next.focus();
+        selectTab(next.dataset.tab, false);
+      });
+
+      const TABS = ["status", "data", "export", "settings"];
+      function selectTab(tab, focusPane) {
+        A.tab = TABS.includes(tab) ? tab : "status";
+        store.set(TAB_KEY, A.tab);
+        document.querySelectorAll(".tab").forEach((t) => {
+          const on = t.dataset.tab === A.tab;
+          t.setAttribute("aria-selected", String(on));
+          t.tabIndex = on ? 0 : -1;
+        });
+        TABS.forEach((name) => { $("pane-" + name).hidden = name !== A.tab; });
+        $("weekPrev").parentElement.hidden = A.tab === "settings";
+        if (focusPane) $("pane-" + A.tab).focus({ preventScroll: true });
+        load();
+      }
+
+      function renderWeekPicker() {
+        const sel = $("weekSel");
+        sel.textContent = "";
+        for (let w = A.maxWeek; w >= 1; w--) sel.append(el("option", { value: w, text: "Minggu " + w + (w === A.currentWeek ? " (minggu ini)" : "") }));
+        sel.value = String(A.week);
+        $("weekPrev").disabled = A.week <= 1;
+        $("weekNext").disabled = A.week >= A.maxWeek;
+      }
+      function setWeek(w) {
+        if (w < 1 || (A.maxWeek && w > A.maxWeek) || w === A.week) return;
+        A.week = w;
+        A.status = A.tasks = A.export = null;
+        load();
+      }
+      $("weekSel").addEventListener("change", (e) => setWeek(Number(e.target.value)));
+      $("weekPrev").addEventListener("click", () => setWeek(A.week - 1));
+      $("weekNext").addEventListener("click", () => setWeek(A.week + 1));
+
+      function paneLoading(pane, text) {
+        const t = setTimeout(() => { pane.textContent = ""; pane.append(el("div", { class: "panel" }, [el("p", { class: "loading", text: text })])); }, 200);
+        return () => clearTimeout(t);
+      }
+      function paneError(pane, err, retry) {
+        pane.textContent = "";
+        pane.append(el("div", { class: "panel" }, [el("div", { class: "callout callout--error", role: "alert" }, [
+          el("strong", { text: "Data belum bisa dimuat" }), el("p", { text: cleanError(err) }),
+        ]), el("button", { class: "btn", type: "button", text: "Coba lagi", onclick: retry })]));
+      }
+
+      async function load() {
+        if (!session) return;
+        const pane = $("pane-" + A.tab);
+        try {
+          if (A.tab === "status" || !A.week) {
+            if (!A.status) {
+              const stop = A.tab === "status" ? paneLoading(pane, "Memuat status pengisian…") : () => {};
+              try { A.status = await api("adminStatus", A.week); } finally { stop(); }
+              A.week = A.status.week; A.currentWeek = A.status.currentWeek; A.maxWeek = A.status.maxWeek;
+            }
+            renderWeekPicker();
+            $("rangeText").textContent = "Siklus " + shortDate(A.status.start) + " – " + shortDate(A.status.end) + " · form unggah " + (A.status.accepting ? "dibuka" : "ditutup");
+          }
+          if (A.tab === "status") renderStatus(pane);
+          if (A.tab === "data") {
+            if (!A.tasks) {
+              const stop = paneLoading(pane, "Memuat data tugas…");
+              try { A.tasks = await api("adminTasks", A.week); } finally { stop(); }
+            }
+            renderTasks(pane);
+          }
+          if (A.tab === "export") {
+            if (!A.export) {
+              const stop = paneLoading(pane, "Memuat data export…");
+              try { A.export = await api("getExportData", A.week); } finally { stop(); }
+            }
+            await renderExport(pane);
+          }
+          if (A.tab === "settings") {
+            if (!A.settings) {
+              const stop = paneLoading(pane, "Memuat pengaturan…");
+              try { A.settings = await api("adminSettings"); } finally { stop(); }
+            }
+            renderSettings(pane);
+          }
+        } catch (err) {
+          if (!/SESI_HABIS/.test(err.message)) paneError(pane, err, load);
+        }
+      }
+
+      // ───── Tab Status ─────
+      function renderStatus(pane) {
+        const s = A.status;
+        const all = s.semesters.flatMap((sem) => sem.kelas.flatMap((k) => k.slots));
+        const reported = all.filter((x) => x.status !== "kosong").length;
+        const tasks = all.reduce((n, x) => n + x.count, 0);
+        const matkulAll = s.semesters.flatMap((sem) => byDay(sem).flatMap((day) => day.matkul));
+        const matkulDone = matkulAll.filter((m) => m.classes.every((c) => c.status !== "kosong")).length;
+        pane.textContent = "";
+        pane.append(el("div", { class: "stats" }, [
+          stat(tasks, "", "Tugas masuk minggu " + s.week),
+          stat(reported, "/" + all.length, "Matkul-kelas sudah melapor"),
+          stat(matkulDone, "/" + matkulAll.length, "Matkul lengkap (semua kelas)"),
+          stat(all.length - reported, "", "Belum ada info", all.length - reported > 0),
+        ]));
+
+        const tools = el("div", { class: "filters" }, [
+          el("label", { class: "check" }, [
+            el("input", { type: "checkbox", onchange: (e) => { A.onlyMissing = e.target.checked; renderStatus(pane); } }),
+            document.createTextNode("Hanya matkul yang belum lengkap"),
+          ]),
+          el("button", { class: "btn", type: "button", onclick: (e) => copyMissing(e.currentTarget),
+            html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>Salin daftar belum mengisi' }),
+        ]);
+        tools.querySelector("input").checked = A.onlyMissing;
+        pane.append(tools);
+
+        s.semesters.forEach((sem) => {
+          const slots = sem.kelas.flatMap((k) => k.slots);
+          const done = slots.filter((x) => x.status !== "kosong").length;
+          const days = byDay(sem).map((day) => Object.assign(day, {
+            matkul: A.onlyMissing ? day.matkul.filter((m) => m.classes.some((c) => c.status === "kosong")) : day.matkul,
+          })).filter((day) => day.matkul.length);
+          pane.append(el("section", { class: "panel grain", "aria-label": "Semester " + sem.semester }, [el("div", null, [
+            el("div", { class: "panel__head" }, [
+              el("h2", { html: "<i>S</i>emest<i>e</i>r " + sem.semester }),
+              el("p", { class: "panel__sub", text: done + " dari " + slots.length + " matkul-kelas sudah melapor" }),
+            ]),
+            ...(days.length ? days.map((day) => el("section", { class: "day", "aria-label": day.hari }, [
+              el("h3", { class: "day__label", text: day.hari }),
+              ...day.matkul.map((m) => el("div", { class: "mk" }, [
+                el("h4", { class: "mk__name", text: m.name }),
+                el("div", { class: "mk__classes" }, m.classes.map(classPill)),
+              ])),
+            ])) : [el("p", { class: "empty", text: "Semua kelas sudah melapor." })]),
+          ])]));
+        });
+      }
+      /** semester → [{hari, matkul: [{name, classes: [{kelas, status, count}]}]}], urut seperti papan tugas. */
+      function byDay(sem) {
+        const days = DAY_ORDER.map((hari) => ({ hari: hari, matkul: [] }));
+        sem.kelas.forEach((k) => k.slots.forEach((x) => {
+          const day = days.find((d) => d.hari === x.hari);
+          if (!day) return;
+          let m = day.matkul.find((g) => g.name === x.matkul);
+          if (!m) day.matkul.push(m = { name: x.matkul, classes: [] });
+          m.classes.push({ kelas: k.kelas, status: x.status, count: x.count });
+        }));
+        days.forEach((d) => {
+          d.matkul.sort((a, b) => a.name.localeCompare(b.name, "id"));
+          d.matkul.forEach((m) => m.classes.sort((a, b) => a.kelas.localeCompare(b.kelas)));
+        });
+        return days.filter((d) => d.matkul.length);
+      }
+      function classPill(c) {
+        if (c.status === "ada") return el("span", { class: "pill pill--ada", text: "Kelas " + c.kelas + " · " + c.count + " tugas" });
+        if (c.status === "tidak-ada") return el("span", { class: "pill pill--ok", text: "Kelas " + c.kelas + " · tidak ada tugas" });
+        return el("span", { class: "pill pill--missing", text: "Kelas " + c.kelas + " · belum ada info" });
+      }
+      function stat(value, suffix, label, warn) {
+        return el("div", { class: "stat grain" + (warn ? " stat--warn" : "") }, [el("div", null, [
+          el("div", { class: "stat__value" }, [document.createTextNode(String(value)), suffix ? el("small", { text: suffix }) : null]),
+          el("div", { class: "stat__label", text: label }),
+        ])]);
+      }
+      async function copyMissing(btn) {
+        const s = A.status;
+        // Dikelompokkan semester → hari → matkul, sama dengan papan tugas.
+        const lines = ["*WRY minggu " + s.week + "* (" + shortDate(s.start) + " – " + shortDate(s.end) + ")", "Belum ada info tugas:"];
+        s.semesters.forEach((sem) => {
+          const days = byDay(sem).map((day) => ({
+            hari: day.hari,
+            matkul: day.matkul.map((m) => ({ name: m.name, kelas: m.classes.filter((c) => c.status === "kosong").map((c) => c.kelas) }))
+              .filter((m) => m.kelas.length),
+          })).filter((day) => day.matkul.length);
+          if (!days.length) return;
+          lines.push("", "*Semester " + sem.semester + "*");
+          days.forEach((day) => {
+            lines.push("_" + day.hari + "_");
+            day.matkul.forEach((m) => lines.push("• " + m.name + ": Kelas " + m.kelas.join(", ")));
+          });
+        });
+        if (lines.length === 2) lines.push("Semua matkul sudah melapor 🎉");
+        if (boot.publicUrl) lines.push("", "Isi di: " + boot.publicUrl);
+        const text = lines.join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+          toast("Daftar disalin. Tinggal tempel di grup WhatsApp.");
+        } catch (_) {
+          $("copyText").value = text;
+          $("copyDlg").showModal();
+          $("copyText").select();
+        }
+        btn.focus();
+      }
+
+      // ───── Tab Data tugas ─────
+      function renderTasks(pane) {
+        const rows = A.tasks;
+        pane.textContent = "";
+        const search = el("input", { class: "input", type: "search", placeholder: "Cari matkul, kelas, tugas, pengisi", "aria-label": "Cari tugas" });
+        search.value = A.query;
+        search.addEventListener("input", () => { A.query = search.value; renderList(); });
+        const filter = el("select", { class: "input", "aria-label": "Status tugas" }, [
+          el("option", { value: "aktif", text: "Aktif" }), el("option", { value: "dihapus", text: "Dihapus" }), el("option", { value: "semua", text: "Semua" }),
+        ]);
+        filter.value = A.taskFilter;
+        filter.addEventListener("change", () => { A.taskFilter = filter.value; renderTasks(pane); });
+        const listHost = el("div");
+        const panel = el("section", { class: "panel grain" }, [el("div", null, [
+          el("div", { class: "panel__head" }, [
+            el("h2", { html: "Data <i>tugas</i>" }),
+            el("p", { class: "panel__sub", text: rows.filter((t) => t.status !== "dihapus").length + " aktif · " + rows.filter((t) => t.status === "dihapus").length + " dihapus" }),
+          ]),
+          el("div", { class: "filters" }, [search, filter]),
+          listHost,
+        ])]);
+        pane.append(panel);
+        function renderList() {
+          const qq = A.query.trim().toLowerCase();
+          const list = rows.filter((t) =>
+            (A.taskFilter === "semua" || (A.taskFilter === "dihapus" ? t.status === "dihapus" : t.status !== "dihapus")) &&
+            (!qq || (t.matkul + " " + t.kelas + " " + t.deskripsi + " " + t.pengisi).toLowerCase().includes(qq)));
+          listHost.textContent = "";
+          if (!list.length) {
+            listHost.append(el("p", { class: "empty", text: rows.length ? "Tidak ada tugas yang cocok dengan filter." : "Belum ada laporan untuk minggu " + A.week + "." }));
+            return;
+          }
+          list.forEach((t) => listHost.append(taskRow(t)));
+        }
+        renderList();
+      }
+
+      const STATUS_LABEL = { "ada": "Aktif", "tidak-ada": "Tidak ada tugas", "dihapus": "Dihapus" };
+      function taskRow(t) {
+        const row = el("article", { class: "task-row" + (t.status === "dihapus" ? " is-deleted" : "") });
+        const desc = t.status === "tidak-ada" || (!t.deskripsi && t.status === "dihapus") ? "Laporan: tidak ada tugas" : t.deskripsi;
+        row.append(
+          el("div", { class: "task-row__head" }, [
+            el("h3", { class: "task-row__title", text: t.matkul + " - " + t.kelas }),
+            el("span", { class: "badge badge--" + t.status, text: STATUS_LABEL[t.status] || t.status }),
+            el("span", { class: "task-row__meta", text: "Smt " + t.semester + " · " + (t.hari || "—") + (t.deadline ? " · deadline " + shortDate(t.deadline) : "") }),
+          ]),
+          el("p", { class: "task-row__desc", text: desc }),
+          el("p", { class: "task-row__meta", text: "oleh " + (t.pengisi || "—") + " · diubah " + stamp(t.diubah) }),
+        );
+        const actions = el("div", { class: "task-row__actions" });
+        const historyBtn = el("button", { class: "btn btn--ghost", type: "button", text: "Riwayat", "aria-expanded": "false" });
+        historyBtn.addEventListener("click", () => toggleHistory(row, t, historyBtn));
+        if (session.canEdit) {
+          if (t.status === "ada") {
+            actions.append(el("button", { class: "btn", type: "button", text: "Edit", onclick: () => startEdit(row, t) }));
+          }
+          if (t.status !== "dihapus") {
+            actions.append(el("button", { class: "btn", type: "button", text: "Hapus", onclick: (e) => removeTask(t, e.currentTarget) }));
+          } else {
+            actions.append(el("button", { class: "btn", type: "button", text: "Pulihkan", onclick: (e) => restoreTask(t, e.currentTarget) }));
+          }
+        }
+        actions.append(historyBtn);
+        row.append(actions);
+        return row;
+      }
+
+      function startEdit(row, t) {
+        const area = el("textarea", { class: "input", maxlength: "160", "aria-label": "Deskripsi tugas" });
+        area.value = t.deskripsi;
+        const date = el("input", { class: "input", type: "date", "aria-label": "Deadline" });
+        date.value = t.deadline;
+        const err = el("p", { class: "field__error", role: "alert" });
+        const save = el("button", { class: "btn btn--primary", type: "button", text: "Simpan" });
+        const cancel = el("button", { class: "btn", type: "button", text: "Batal" });
+        const form = el("div", null, [el("div", { class: "task-row__edit" }, [area, date]), err, el("div", { class: "task-row__actions" }, [save, cancel])]);
+        const descNode = row.querySelector(".task-row__desc");
+        const actions = row.querySelector(".task-row__actions");
+        descNode.hidden = true; actions.hidden = true;
+        row.insertBefore(form, actions);
+        area.focus();
+        cancel.addEventListener("click", () => { form.remove(); descNode.hidden = false; actions.hidden = false; actions.querySelector("button").focus(); });
+        save.addEventListener("click", async () => {
+          if (!area.value.trim()) { err.textContent = "Deskripsi tidak boleh kosong."; area.focus(); return; }
+          if (!date.value) { err.textContent = "Pilih tanggal deadline."; date.focus(); return; }
+          try {
+            await busy(save, "Menyimpan…", () => api("adminUpdateTask", t.id, { deskripsi: area.value.trim(), deadline: date.value }));
+            toast("Tugas diperbarui.");
+            await refreshData();
+          } catch (e) { err.textContent = cleanError(e); }
+        });
+      }
+
+      async function removeTask(t, btn) {
+        const what = t.status === "tidak-ada" ? "laporan “tidak ada tugas”" : "“" + t.deskripsi + "”";
+        const ok = await confirmAction("Hapus tugas ini?", what + " dari " + t.matkul + " - " + t.kelas + " (minggu " + A.week + ") akan hilang dari papan. Bisa dipulihkan dari filter Dihapus.", "Hapus tugas");
+        if (!ok) { btn.focus(); return; }
+        try {
+          await busy(btn, "Menghapus…", () => api("adminDeleteTask", t.id));
+          toast("Tugas dihapus. Bisa dipulihkan dari filter Dihapus.");
+          await refreshData();
+        } catch (e) { toast("Gagal menghapus: " + cleanError(e)); }
+      }
+
+      async function restoreTask(t, btn) {
+        try {
+          await busy(btn, "Memulihkan…", () => api("adminRestoreTask", t.id));
+          toast("Tugas dipulihkan dan tampil lagi di papan.");
+          await refreshData();
+        } catch (e) { toast("Gagal memulihkan: " + cleanError(e)); }
+      }
+
+      async function refreshData() {
+        A.status = null;
+        A.tasks = await api("adminTasks", A.week);
+        renderTasks($("pane-data"));
+      }
+
+      const ACTION_LABEL = { "tambah": "Ditambahkan", "edit": "Diedit", "edit-admin": "Diedit admin", "hapus": "Dihapus", "hapus-admin": "Dihapus admin", "hapus-otomatis": "Gugur otomatis", "pulihkan": "Dipulihkan", "tidak-ada-tugas": "Lapor tidak ada tugas" };
+      async function toggleHistory(row, t, btn) {
+        const open = row.querySelector(".history");
+        if (open) { open.remove(); btn.setAttribute("aria-expanded", "false"); return; }
+        try {
+          const items = await busy(btn, "Memuat…", () => api("adminHistory", t.id));
+          const list = el("ol", { class: "history", "aria-label": "Riwayat " + t.matkul + " - " + t.kelas });
+          if (!items.length) list.append(el("li", { text: "Belum ada riwayat." }));
+          items.forEach((h) => {
+            const changes = [];
+            if (h.sebelum && h.sesudah) {
+              if (h.sebelum.deskripsi !== h.sesudah.deskripsi) changes.push("deskripsi: “" + (h.sebelum.deskripsi || "—") + "” → “" + (h.sesudah.deskripsi || "—") + "”");
+              if (h.sebelum.deadline !== h.sesudah.deadline) changes.push("deadline: " + shortDate(h.sebelum.deadline) + " → " + shortDate(h.sesudah.deadline));
+            } else if (h.sesudah && h.sesudah.deskripsi) {
+              changes.push("“" + h.sesudah.deskripsi + "”, deadline " + shortDate(h.sesudah.deadline));
+            }
+            list.append(el("li", null, [
+              el("time", { datetime: h.waktu, text: stamp(h.waktu) }),
+              document.createTextNode(" · " + (ACTION_LABEL[h.aksi] || h.aksi) + " oleh " + (h.pengisi || "—")),
+              changes.length ? el("div", { text: changes.join(" · ") }) : null,
+            ]));
+          });
+          row.append(list);
+          btn.setAttribute("aria-expanded", "true");
+        } catch (e) { toast("Riwayat belum bisa dimuat: " + cleanError(e)); }
+      }
+
+      // ───── Tab Export IG ─────
+      // Renderer slide 1080×1350 mengikuti Figma: cover (node 47:1153) & slide semester (node 48:1802).
+      const MONTHS_LONG = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const IG = {
+        W: 1080, H: 1350,
+        rows: { x: 126, y: 266, colW: 674.811, gap: 23, titleH: 47.153, titleSize: 45.095, descGap: 9, descSize: 25.488, descMaxLines: 4, minH: 137.535, budget: 7 * 137.535 },
+        sticky: { w: 130.609, h: 137.535 },
+      };
+      const images = {};
+      function loadImage(name) {
+        images[name] = images[name] || new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous"; // Aset dari jsDelivr (CORS *) supaya canvas bisa diekspor.
+          img.onload = () => resolve(img);
+          img.onerror = () => { delete images[name]; reject(new Error("Gambar " + name + " gagal dimuat.")); };
+          img.src = asset("ig/" + name);
+        });
+        return images[name];
+      }
+      async function loadSlideAssets() {
+        await Promise.all([
+          "700 210px Poppins", '400 124px "Instrument Serif"', 'italic 400 124px "Instrument Serif"', '300 25px "Plus Jakarta Sans"',
+        ].map((f) => document.fonts.load(f)));
+        const [cover, semester, sticky, grunge] = await Promise.all(["cover-bg.png", "semester-bg.png", "sticky.png", "grunge.jpg"].map(loadImage));
+        return { cover, semester, sticky, grunge };
+      }
+      /** Baseline teks seperti CSS: kotak baris setinggi lineHeight mulai dari top, konten font di tengahnya. */
+      function cssBaseline(ctx, top, lineHeight) {
+        const m = ctx.measureText("Hg");
+        return top + (lineHeight - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+      }
+      function lineMetrics(ctx) {
+        const m = ctx.measureText("Hg");
+        return { ascent: m.fontBoundingBoxAscent, descent: m.fontBoundingBoxDescent, height: m.fontBoundingBoxAscent + m.fontBoundingBoxDescent };
+      }
+      function wrapLines(ctx, text, width, maxLines) {
+        const words = String(text).split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          const next = line ? line + " " + word : word;
+          if (ctx.measureText(next).width <= width || !line) line = next;
+          else { lines.push(line); line = word; }
+        });
+        if (line) lines.push(line);
+        if (lines.length > maxLines) {
+          let last = lines.slice(maxLines - 1).join(" ");
+          while (last.length && ctx.measureText(last + "…").width > width) last = last.slice(0, -1);
+          lines.length = maxLines - 1;
+          lines.push(last.trimEnd() + "…");
+        }
+        return lines;
+      }
+      function newCanvas() {
+        const c = document.createElement("canvas");
+        c.width = IG.W; c.height = IG.H;
+        return c;
+      }
+
+      function drawCover(week, a) {
+        const c = newCanvas(), ctx = c.getContext("2d");
+        ctx.drawImage(a.cover, 0, 0, IG.W, IG.H);
+        // Angka minggu: Poppins Bold 210.041, #DBDFE2, blend lighten, kotak 222 × 235.159 berpusat di x 540, top 859.43.
+        ctx.save();
+        ctx.font = "700 210.041px Poppins";
+        ctx.fillStyle = "#dbdfe2";
+        ctx.textAlign = "center";
+        ctx.globalCompositeOperation = "lighten";
+        ctx.fillText(String(week), 540, cssBaseline(ctx, 859.43, 235.159));
+        ctx.restore();
+        // Tekstur grunge di atas angka: kotak 252 × 224 di (414, 852), rotasi −90°, opacity 0.7 × 0.5, blend overlay.
+        ctx.save();
+        ctx.translate(414 + 126, 852 + 112);
+        ctx.rotate(-Math.PI / 2);
+        ctx.beginPath();
+        ctx.rect(-112, -126, 224, 252);
+        ctx.clip();
+        ctx.globalAlpha = 0.35;
+        ctx.globalCompositeOperation = "overlay";
+        ctx.drawImage(a.grunge, -112 - 1.6161 * 224, -126 - 2.1471 * 252, 9.0625 * 224, 4.9886 * 252);
+        ctx.restore();
+        return c;
+      }
+
+      /** Ukur baris tugas (tinggi menyesuaikan deskripsi 1–3 baris) untuk pembagian slide. */
+      function measureRows(ctx, tasks) {
+        ctx.font = '300 ' + IG.rows.descSize + 'px "Plus Jakarta Sans"';
+        const lh = lineMetrics(ctx).height;
+        return tasks.map((t) => {
+          const lines = wrapLines(ctx, t.deskripsi, IG.rows.colW, IG.rows.descMaxLines);
+          const colH = IG.rows.titleH + IG.rows.descGap + lines.length * lh;
+          return { task: t, lines: lines, colH: colH, h: Math.max(IG.rows.minH, colH) };
+        });
+      }
+      /** Bagi baris ke slide: jumlah slide minimum (greedy), lalu isi diratakan (mis. 8 tugas → 4 + 4, bukan 7 + 1). */
+      function paginate(rows) {
+        const greedy = [];
+        let page = [], used = 0;
+        rows.forEach((r) => {
+          if (page.length && used + r.h > IG.rows.budget) { greedy.push(page); page = []; used = 0; }
+          page.push(r); used += r.h;
+        });
+        if (page.length) greedy.push(page);
+        if (greedy.length < 2) return greedy;
+
+        const balanced = [];
+        let i = 0;
+        for (let p = 0; p < greedy.length; p++) {
+          const target = Math.ceil((rows.length - i) / (greedy.length - p));
+          const out = [];
+          let h = 0;
+          while (i < rows.length && (out.length < target || p === greedy.length - 1) && h + rows[i].h <= IG.rows.budget) {
+            out.push(rows[i]);
+            h += rows[i].h;
+            i++;
+          }
+          balanced.push(out);
+        }
+        return i === rows.length && balanced.every((pg) => pg.length) ? balanced : greedy;
+      }
+
+      function drawSemester(semester, term, week, rows, pageNo, pageCount, a) {
+        const c = newCanvas(), ctx = c.getContext("2d");
+        ctx.drawImage(a.semester, 0, 0, IG.W, IG.H);
+        ctx.fillStyle = "#3a3a3a";
+        // Judul "Semester N": Instrument Serif 124.559, huruf S & e miring, mulai x 181, kotak baris 201.816 dari top 64.
+        ctx.font = '400 124.559px "Instrument Serif"';
+        const titleBase = cssBaseline(ctx, 64, 201.816);
+        let x = 181;
+        [["S", true], ["emest", false], ["e", true], ["r " + semester, false]].forEach(([text, italic]) => {
+          ctx.font = (italic ? "italic " : "") + '400 124.559px "Instrument Serif"';
+          ctx.fillText(text, x, titleBase);
+          x += ctx.measureText(text).width;
+        });
+        // "Week N" (miring) & "Semester Ganjil/Genap": 42.849, opacity 0.5, baris 69.426, baris kedua naik 30 px.
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.font = 'italic 400 42.849px "Instrument Serif"';
+        ctx.fillText("Week " + week + (pageCount > 1 ? " (" + pageNo + "/" + pageCount + ")" : ""), 660.57, cssBaseline(ctx, 119.41, 69.426));
+        ctx.font = '400 42.849px "Instrument Serif"';
+        ctx.fillText("Semester " + term, 660.57, cssBaseline(ctx, 119.41 + 69.426 - 30, 69.426));
+        ctx.restore();
+
+        let top = IG.rows.y;
+        rows.forEach((r) => {
+          drawRow(ctx, r, top, a);
+          top += r.h;
+        });
+        return c;
+      }
+
+      function drawRow(ctx, r, rowTop, a) {
+        const R = IG.rows, t = r.task;
+        const colTop = rowTop + (r.h - r.colH) / 2;
+        // Judul matkul - kelas: Instrument Serif 45.095, #0493C7; mengecil bila melebihi kolom 674.811.
+        let size = R.titleSize;
+        const title = t.matkul + " - " + t.kelas;
+        ctx.font = "400 " + size + 'px "Instrument Serif"';
+        while (ctx.measureText(title).width > R.colW && size > 30) { size -= 1; ctx.font = "400 " + size + 'px "Instrument Serif"'; }
+        ctx.fillStyle = "#0493c7";
+        ctx.fillText(title, R.x, cssBaseline(ctx, colTop, R.titleH));
+        // Deskripsi: Plus Jakarta Sans Light 25.488, hitam, line-height normal.
+        ctx.font = "300 " + R.descSize + 'px "Plus Jakarta Sans"';
+        ctx.fillStyle = "#000";
+        const m = lineMetrics(ctx);
+        const descTop = colTop + R.titleH + R.descGap;
+        r.lines.forEach((line, i) => ctx.fillText(line, R.x, descTop + i * m.height + m.ascent));
+        drawSticky(ctx, R.x + R.colW + R.gap, rowTop + (r.h - IG.sticky.h) / 2, t.deadline, a);
+      }
+
+      /** Sticky note deadline (Figma 48:1872): gambar dipotong 156.35% × 129.26%, geser −29.72% / −9.77%, bayangan 4.37/4.37/5.618. */
+      function drawSticky(ctx, sx, sy, iso, a) {
+        const S = IG.sticky;
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowOffsetX = 4.37; ctx.shadowOffsetY = 4.37; ctx.shadowBlur = 5.618;
+        ctx.drawImage(a.sticky, sx - 0.2972 * S.w, sy - 0.0977 * S.h, 1.5635 * S.w, 1.2926 * S.h);
+        ctx.restore();
+        const d = parseIso(iso);
+        const rot = (-3.47 * Math.PI) / 180;
+        // Bulan: Instrument Serif Italic 23.74, #3A3A3A, kotak 92.668 × 43.649 rata kanan (padding kanan 21, atas 13).
+        ctx.save();
+        ctx.translate(sx + S.w - 21 - 92.668 / 2, sy + 13 + 43.649 / 2);
+        ctx.rotate(rot);
+        ctx.font = 'italic 400 23.74px "Instrument Serif"';
+        ctx.fillStyle = "#3a3a3a";
+        ctx.textAlign = "center";
+        let mm = lineMetrics(ctx);
+        ctx.fillText(MONTHS_LONG[d.getMonth()], 0, (mm.ascent - mm.descent) / 2);
+        ctx.restore();
+        // Tanggal: Instrument Serif 78.271, merah, line-height 44 di kotak 85.258 × 104.669 (baris di bagian atas paragraf).
+        ctx.save();
+        ctx.translate(sx + S.w - 21 - 85.258 / 2, sy + 13 + 43.649 + 104.669 / 2);
+        ctx.rotate(rot);
+        ctx.font = '400 78.271px "Instrument Serif"';
+        ctx.fillStyle = "#ff0000";
+        ctx.textAlign = "center";
+        mm = lineMetrics(ctx);
+        const lineCenter = (104.669 - 100.07) / 2 + 22 - 104.669 / 2;
+        ctx.fillText(String(d.getDate()), 0, lineCenter + (mm.ascent - mm.descent) / 2);
+        ctx.restore();
+      }
+
+      /** Semua slide minggu ini: cover + semester (dipecah per 7 baris setara). Urut semester → hari → matkul → kelas. */
+      async function buildSlides(data) {
+        const a = await loadSlideAssets();
+        const slides = [{ name: "cover", label: "Cover", canvas: drawCover(data.week, a) }];
+        const ctx = newCanvas().getContext("2d");
+        data.semesters.forEach((sem) => {
+          const tasks = data.tasks.filter((t) => t.semester === sem);
+          if (!tasks.length) return;
+          const pages = paginate(measureRows(ctx, tasks));
+          pages.forEach((rows, i) => slides.push({
+            name: "semester-" + sem + (pages.length > 1 ? "-" + (i + 1) : ""),
+            label: "Semester " + sem + (pages.length > 1 ? " (" + (i + 1) + "/" + pages.length + ")" : ""),
+            canvas: drawSemester(sem, data.term, data.week, rows, i + 1, pages.length, a),
+          }));
+        });
+        await Promise.all(slides.map((s) => new Promise((resolve, reject) => s.canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Slide gagal dibuat.")); return; }
+          s.blob = blob;
+          s.url = URL.createObjectURL(blob);
+          resolve();
+        }, "image/jpeg", 0.92))));
+        return slides;
+      }
+
+      function buildCaption(data) {
+        const lines = ["📌 We Remind You! — Perkuliahan minggu ke-" + data.week];
+        data.semesters.forEach((sem) => {
+          const tasks = data.tasks.filter((t) => t.semester === sem);
+          if (!tasks.length) return;
+          lines.push("", "Semester " + sem);
+          DAY_ORDER.forEach((hari) => {
+            const day = tasks.filter((t) => t.hari === hari);
+            if (!day.length) return;
+            lines.push(hari);
+            day.forEach((t) => lines.push("• " + t.matkul + " - " + t.kelas + ": " + t.deskripsi + " (deadline " + shortDate(t.deadline) + ")"));
+          });
+        });
+        lines.push("", "Tugas kelasmu belum ada? Tambahkan di: " + (data.publicUrl || boot.publicUrl || ""), "", "#WeRemindYou #HIMAIDEITS");
+        return lines.join("\n");
+      }
+
+      let exportSlides = null;
+      async function renderExport(pane) {
+        const data = A.export;
+        pane.textContent = "";
+        const status = el("div", { id: "exportStatus" });
+        const actions = el("div", { class: "row-actions export-actions" });
+        const grid = el("div", { class: "slides", "aria-live": "polite" }, [el("p", { class: "loading", text: "Menyiapkan slide…" })]);
+        const caption = el("textarea", { class: "input caption", rows: "10", "aria-label": "Caption Instagram" });
+        caption.value = buildCaption(data);
+        const panel = el("section", { class: "panel grain" }, [el("div", null, [
+          el("div", { class: "panel__head" }, [
+            el("h2", { html: "Slide IG <i>minggu " + data.week + "</i>" }),
+            el("p", { class: "panel__sub", text: data.tasks.length + " tugas · siklus " + shortDate(data.start) + " – " + shortDate(data.end) }),
+          ]),
+          status, actions, grid,
+        ])]);
+        const capPanel = el("section", { class: "panel grain" }, [el("div", null, [
+          el("div", { class: "panel__head" }, [el("h2", { html: "Caption <i>Instagram</i>" }), el("p", { class: "panel__sub", text: "Boleh diedit sebelum disalin." })]),
+          caption,
+          el("div", { class: "row-actions" }, [el("button", { class: "btn", type: "button", text: "Salin caption", onclick: (e) => copyText(caption.value, e.currentTarget, "Caption disalin.") })]),
+        ])]);
+        pane.append(panel, capPanel);
+        renderExportStatus(status, data);
+
+        if (!data.tasks.length) {
+          status.append(el("div", { class: "callout" }, [el("strong", { text: "Belum ada tugas untuk minggu " + data.week }), el("p", { text: "Slide hanya berisi cover. Cek tab Status untuk kelas yang belum mengisi." })]));
+        }
+        try {
+          if (exportSlides) exportSlides.forEach((s) => URL.revokeObjectURL(s.url));
+          exportSlides = await buildSlides(data);
+        } catch (err) {
+          grid.textContent = "";
+          grid.append(el("div", { class: "callout callout--error", role: "alert" }, [el("strong", { text: "Slide belum bisa dibuat" }), el("p", { text: cleanError(err) })]));
+          return;
+        }
+        if (A.export !== data) return; // Minggu sudah diganti selagi merender.
+        grid.textContent = "";
+        exportSlides.forEach((s, i) => grid.append(el("figure", { class: "slide" }, [
+          el("img", { src: s.url, alt: "Slide " + (i + 1) + ": " + s.label, width: "1080", height: "1350", loading: "lazy" }),
+          el("figcaption", null, [
+            el("span", { text: (i + 1) + " · " + s.label }),
+            el("a", { class: "btn btn--ghost", href: s.url, download: fileName(data.week, i, s.name), text: "Unduh" }),
+          ]),
+        ])));
+        const zipBtn = el("button", { class: "btn btn--primary", type: "button", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Unduh semua (ZIP)' });
+        zipBtn.addEventListener("click", () => downloadZip(zipBtn, data));
+        const driveBtn = el("button", { class: "btn", type: "button", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4z"/></svg>Simpan ke Drive' });
+        driveBtn.addEventListener("click", () => saveToDrive(driveBtn, data, caption.value, status));
+        actions.append(zipBtn, driveBtn);
+      }
+
+      function renderExportStatus(host, data) {
+        host.textContent = "";
+        const last = data.lastExport;
+        if (!last) {
+          host.append(el("div", { class: "callout" }, [el("strong", { text: "Belum pernah diexport" }), el("p", { text: "Unduh atau simpan ke Drive; waktu export dicatat untuk mendeteksi perubahan data setelahnya." })]));
+          return;
+        }
+        const text = "Terakhir " + stamp(last.waktu) + " oleh " + last.oleh + " (" + last.slides + " slide).";
+        if (data.changedSince > 0) {
+          host.append(el("div", { class: "callout callout--error", role: "status" }, [
+            el("strong", { text: "⚠ Ada " + data.changedSince + " perubahan data setelah export terakhir" }),
+            el("p", { text: text + " Slide di bawah sudah memakai data terbaru — export ulang lalu ganti postingan bila perlu." }),
+          ]));
+        } else {
+          host.append(el("div", { class: "callout callout--ok", role: "status" }, [
+            el("strong", { text: "Sudah diexport, data belum berubah" }),
+            el("p", null, [document.createTextNode(text + " "), last.url ? el("a", { href: last.url, target: "_blank", rel: "noopener", text: "Buka folder Drive" }) : null]),
+          ]));
+        }
+      }
+
+      const fileName = (week, i, name) => "wry-minggu-" + String(week).padStart(2, "0") + "-" + String(i + 1).padStart(2, "0") + "-" + name + ".jpg";
+
+      function loadJsZip() {
+        if (window.JSZip) return Promise.resolve(window.JSZip);
+        return new Promise((resolve, reject) => {
+          const sc = document.createElement("script");
+          sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+          sc.onload = () => resolve(window.JSZip);
+          sc.onerror = () => reject(new Error("Pustaka ZIP gagal dimuat. Unduh slide satu per satu."));
+          document.head.append(sc);
+        });
+      }
+
+      async function downloadZip(btn, data) {
+        try {
+          await busy(btn, "Membuat ZIP…", async () => {
+            const JSZip = await loadJsZip();
+            const zip = new JSZip();
+            exportSlides.forEach((s, i) => zip.file(fileName(data.week, i, s.name), s.blob));
+            const blob = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(blob);
+            const link = el("a", { href: url, download: "wry-minggu-" + String(data.week).padStart(2, "0") + ".zip" });
+            document.body.append(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            await recordExport(data, "", "");
+          });
+          toast("ZIP diunduh dan export dicatat.");
+        } catch (err) { toast("Gagal membuat ZIP: " + cleanError(err)); }
+      }
+
+      const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).split(",")[1]);
+        r.onerror = () => reject(new Error("Slide gagal dibaca."));
+        r.readAsDataURL(blob);
+      });
+
+      async function saveToDrive(btn, data, caption, statusHost) {
+        try {
+          await busy(btn, "Menyiapkan folder…", async () => {
+            const { folderId } = await api("beginExport", data.week);
+            for (let i = 0; i < exportSlides.length; i++) {
+              btn.textContent = "Menyimpan " + (i + 1) + "/" + exportSlides.length + "…";
+              await api("uploadExportSlide", folderId, i, exportSlides[i].name, await blobToBase64(exportSlides[i].blob));
+            }
+            btn.textContent = "Menyelesaikan…";
+            await recordExport(data, folderId, caption);
+          });
+          renderExportStatus(statusHost, data);
+          toast("Slide & caption tersimpan di Drive.");
+        } catch (err) { toast("Gagal menyimpan ke Drive: " + cleanError(err)); }
+      }
+
+      async function recordExport(data, folderId, caption) {
+        const res = await api("finishExport", data.week, folderId, exportSlides.length, caption);
+        data.lastExport = { waktu: res.waktu, oleh: res.oleh, slides: res.slides, url: res.url };
+        data.changedSince = 0;
+        if ($("exportStatus")) renderExportStatus($("exportStatus"), data);
+      }
+
+      async function copyText(text, btn, okMessage) {
+        try {
+          await navigator.clipboard.writeText(text);
+          toast(okMessage);
+        } catch (_) {
+          $("copyText").value = text;
+          $("copyDlg").showModal();
+          $("copyText").select();
+        }
+        btn.focus();
+      }
+
+      // ───── Tab Pengaturan ─────
+      function renderSettings(pane) {
+        const s = A.settings;
+        pane.textContent = "";
+        const toggle = el("button", { class: "btn " + (s.accepting ? "" : "btn--primary"), type: "button", text: s.accepting ? "Tutup form" : "Buka form" });
+        toggle.addEventListener("click", async () => {
+          const next = !s.accepting;
+          if (!next) {
+            const ok = await confirmAction("Tutup form unggah?", "Perwakilan kelas tidak bisa mengunggah atau mengedit tugas sampai form dibuka lagi. Papan tugas tetap tampil.", "Tutup form");
+            if (!ok) { toggle.focus(); return; }
+          }
+          try {
+            await busy(toggle, "Menyimpan…", () => api("adminSetAccepting", next));
+            s.accepting = next;
+            A.status = null;
+            toast(next ? "Form unggah dibuka." : "Form unggah ditutup.");
+            renderSettings(pane);
+            pane.querySelector(".switch .btn").focus();
+          } catch (e) { toast("Gagal menyimpan: " + cleanError(e)); }
+        });
+
+        const general = el("section", { class: "panel grain" }, [el("div", null, [
+          el("div", { class: "panel__head" }, [el("h2", { html: "Pengaturan <i>umum</i>" })]),
+          el("div", { class: "switch" }, [
+            el("div", null, [
+              el("strong", { text: "Form unggah " + (s.accepting ? "dibuka" : "ditutup") }),
+              el("span", { text: s.accepting ? "Perwakilan kelas bisa mengunggah & mengedit tugas." : "Hanya papan tugas yang tampil." }),
+            ]),
+            session.canEdit ? toggle : el("span", { class: "pill pill--muted", text: "Hanya admin" }),
+          ]),
+          el("dl", { class: "kv", style: "margin-top:16px" }, [
+            el("dt", { text: "Semester" }), el("dd", { text: s.term }),
+            el("dt", { text: "Minggu ke-1" }), el("dd", { text: shortDate(s.semesterStart) + " " + s.semesterStart.slice(0, 4) }),
+            el("dt", { text: "Minggu berjalan" }), el("dd", { text: s.currentWeek + " dari " + s.totalWeeks }),
+            el("dt", { text: "Admin" }), el("dd", { text: s.adminEmails.join(", ") || "—" }),
+            el("dt", { text: "Tim design" }), el("dd", { text: s.designEmails.join(", ") || "—" }),
+          ]),
+          el("p", { class: "field__hint", text: "Tanggal mulai semester, daftar email, dan daftar matkul diubah langsung di Spreadsheet (tab Config & Matkul)." }),
+          s.spreadsheetUrl ? el("div", { class: "row-actions" }, [el("a", { class: "btn", href: s.spreadsheetUrl, target: "_blank", rel: "noopener", text: "Buka Spreadsheet" })]) : null,
+        ])]);
+
+        const rows = s.matkul.slice().sort((a, b) => a.semester - b.semester || DAY_ORDER.indexOf(a.hari) - DAY_ORDER.indexOf(b.hari) || a.matkul.localeCompare(b.matkul, "id") || a.kelas.localeCompare(b.kelas));
+        const merged = [];
+        rows.forEach((m) => {
+          const last = merged[merged.length - 1];
+          if (last && last.semester === m.semester && last.hari === m.hari && last.matkul === m.matkul) last.kelas.push(m.kelas);
+          else merged.push({ semester: m.semester, hari: m.hari, matkul: m.matkul, kelas: [m.kelas] });
+        });
+        const table = el("table", { class: "matkul-table" }, [
+          el("thead", null, [el("tr", null, ["Smt", "Hari", "Mata kuliah", "Kelas"].map((h) => el("th", { scope: "col", text: h })))]),
+          el("tbody", null, merged.map((m) => el("tr", null, [
+            el("td", { text: String(m.semester) }), el("td", { text: m.hari }), el("td", { text: m.matkul }), el("td", { text: m.kelas.join(", ") }),
+          ]))),
+        ]);
+        const master = el("section", { class: "panel grain" }, [el("div", null, [
+          el("div", { class: "panel__head" }, [el("h2", { html: "Master <i>matkul</i>" }), el("p", { class: "panel__sub", text: s.matkul.length + " matkul-kelas aktif" })]),
+          el("div", { class: "table-scroll" }, [table]),
+        ])]);
+        pane.append(el("div", { class: "settings" }, [general, master]));
+      }
+
+      // ───── Mulai ─────
+      async function start() {
+        if (boot.ready === false) {
+          $("loginView").hidden = false;
+          $("emailForm").hidden = true;
+          loginAlert("error", "Sistem belum disiapkan", "Jalankan setupSheet di Apps Script lalu muat ulang halaman ini.");
+          return;
+        }
+        const token = store.get(TOKEN_KEY);
+        if (!token) { showLogin(""); return; }
+        $("loginView").hidden = false;
+        $("emailForm").hidden = true;
+        loginAlert("", "", "");
+        $("loginLead").textContent = "Memeriksa sesi…";
+        try {
+          const s = await call("adminSession", token);
+          session = Object.assign({ token: token }, s);
+          $("loginLead").textContent = "Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.";
+          enterApp();
+        } catch (err) {
+          $("loginLead").textContent = "Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.";
+          showLogin(/SESI_HABIS/.test(err.message) ? cleanError(err) : "");
+        }
+      }
+      start();
+    })();
+  </script>
+</body>
+</html>

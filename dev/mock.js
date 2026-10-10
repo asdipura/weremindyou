@@ -93,7 +93,7 @@
   async function getFormOptions() {
     const cur = current();
     return {
-      accepting: mode !== "closed",
+      accepting: mode !== "closed" && settings.accepting,
       currentWeek: cur,
       weeks: Array.from({ length: Math.min(TOTAL_WEEKS, cur + 1) }, (_, i) => {
         const s = first + 7 * i;
@@ -146,7 +146,153 @@
     throw new Error("Tugas tidak ditemukan atau sudah dihapus.");
   }
 
-  const api = { getBoard, getFormOptions, checkExisting, saveTasks, deleteTask };
+  // ───── Backoffice (mock) ─────
+  // Email dev: admin.wry@example.com (admin) / design.wry@example.com (tim design). Kode OTP: 123456.
+  const ROLES = { "admin.wry@example.com": "admin", "design.wry@example.com": "design" };
+  const settings = { accepting: true };
+  const history = new Map();
+  /** Entri pertama "tambah" dibuat dari isi asli baris sebelum perubahan pertama. */
+  const logH = (row, before, aksi) => {
+    if (!history.has(row.id)) history.set(row.id, [{ waktu: row.dibuat, aksi: before.deskripsi ? "tambah" : "tidak-ada-tugas", pengisi: before.pengisi, sebelum: null, sesudah: snap(before) }]);
+    history.get(row.id).push({ waktu: new Date().toISOString(), aksi, pengisi: row.pengisi, sebelum: snap(before), sesudah: snap(row) });
+  };
+  const snap = (t) => ({ minggu: t.minggu, status: t.status, deskripsi: t.deskripsi, deadline: t.deadline });
+  function session(token, needAdmin) {
+    const email = String(token || "").split("|")[1];
+    const role = ROLES[email];
+    if (!String(token || "").startsWith("mock|") || !role) throw new Error("SESI_HABIS: Sesi berakhir. Silakan masuk lagi.");
+    if (needAdmin && role !== "admin") throw new Error("Hanya admin WRY yang bisa melakukan ini.");
+    return { email, role };
+  }
+  async function findRow(id) {
+    for (const list of store.values()) { const row = list.find((t) => t.id === id); if (row) return { row, list }; }
+    throw new Error("Tugas tidak ditemukan.");
+  }
+
+  async function requestOtp(email) {
+    console.info("[mock] Kode OTP untuk " + email + ": 123456");
+    return { sent: true, message: "Kalau email ini terdaftar, kode masuk sudah dikirim. (Dev: pakai 123456)" };
+  }
+  async function verifyOtp(email, code) {
+    const role = ROLES[String(email).toLowerCase()];
+    if (code !== "123456" || !role) throw new Error("Kode salah. Sisa 4 percobaan.");
+    return { token: "mock|" + email.toLowerCase(), email: email.toLowerCase(), role, expires: Date.now() + 7 * 864e5 };
+  }
+  async function adminSession(token) { const s = session(token); return { email: s.email, role: s.role, canEdit: s.role === "admin" }; }
+  async function adminLogout() { return { ok: true }; }
+  async function adminStatus(token, week) {
+    session(token);
+    const cur = current();
+    const w = week == null ? cur : Number(week);
+    const ms = await matkul();
+    const active = (await rows(w)).filter((t) => t.status !== "dihapus");
+    const semesters = [];
+    ms.forEach((m) => {
+      let sem = semesters.find((s) => s.semester === m.semester);
+      if (!sem) semesters.push(sem = { semester: m.semester, kelas: [] });
+      let k = sem.kelas.find((x) => x.kelas === m.kelas);
+      if (!k) sem.kelas.push(k = { kelas: m.kelas, slots: [] });
+      const items = active.filter((t) => slotKey(t.semester, t.matkul, t.kelas) === slotKey(m.semester, m.matkul, m.kelas));
+      const ada = items.filter((t) => t.status === "ada");
+      k.slots.push({ matkul: m.matkul, hari: m.hari, status: ada.length ? "ada" : items.length ? "tidak-ada" : "kosong", count: ada.length });
+    });
+    semesters.forEach((s) => s.kelas.sort((a, b) => a.kelas.localeCompare(b.kelas)));
+    const start = first + 7 * (w - 1);
+    return { week: w, currentWeek: cur, maxWeek: Math.min(TOTAL_WEEKS, cur + 1), start: isoOf(start), end: isoOf(start + 6), accepting: settings.accepting, term: "Ganjil", semesters };
+  }
+  async function adminTasks(token, week) {
+    session(token);
+    const ms = await matkul();
+    const hari = (t) => (ms.find((m) => slotKey(m.semester, m.matkul, m.kelas) === slotKey(t.semester, t.matkul, t.kelas)) || {}).hari || "";
+    return (await rows(Number(week))).map((t) => Object.assign({}, t, { hari: hari(t) }))
+      .sort((a, b) => a.semester - b.semester || DAYS.indexOf(a.hari) - DAYS.indexOf(b.hari) || a.matkul.localeCompare(b.matkul) || a.kelas.localeCompare(b.kelas));
+  }
+  async function adminHistory(token, id) {
+    session(token);
+    const { row } = await findRow(id);
+    const list = history.get(id) || [{ waktu: row.dibuat, aksi: row.deskripsi ? "tambah" : "tidak-ada-tugas", pengisi: row.pengisi, sebelum: null, sesudah: snap(row) }];
+    return list.slice().reverse();
+  }
+  async function adminUpdateTask(token, id, changes) {
+    const s = session(token, true);
+    const { row } = await findRow(id);
+    const before = Object.assign({}, row);
+    Object.assign(row, { deskripsi: changes.deskripsi, deadline: changes.deadline, pengisi: "Admin (" + s.email + ")", diubah: new Date().toISOString() });
+    logH(row, before, "edit-admin");
+    return { id };
+  }
+  async function adminDeleteTask(token, id) {
+    const s = session(token, true);
+    const { row } = await findRow(id);
+    if (row.status === "dihapus") throw new Error("Tugas sudah dihapus.");
+    const before = Object.assign({}, row);
+    Object.assign(row, { status: "dihapus", pengisi: "Admin (" + s.email + ")", diubah: new Date().toISOString() });
+    logH(row, before, "hapus-admin");
+    return { id };
+  }
+  async function adminRestoreTask(token, id) {
+    const s = session(token, true);
+    const { row, list } = await findRow(id);
+    const as = row.deskripsi ? "ada" : "tidak-ada";
+    const sib = list.filter((t) => t.id !== id && t.status !== "dihapus" && slotKey(t.semester, t.matkul, t.kelas) === slotKey(row.semester, row.matkul, row.kelas));
+    if (as === "tidak-ada" && sib.length) throw new Error("Kelas ini sudah punya laporan lain di minggu yang sama.");
+    sib.filter((t) => t.status === "tidak-ada").forEach((t) => { t.status = "dihapus"; });
+    const before = Object.assign({}, row);
+    Object.assign(row, { status: as, pengisi: "Admin (" + s.email + ")", diubah: new Date().toISOString() });
+    logH(row, before, "pulihkan");
+    return { id, status: as };
+  }
+  async function adminSetAccepting(token, accepting) { session(token, true); settings.accepting = !!accepting; return { accepting: settings.accepting }; }
+  async function adminSettings(token) {
+    const s = session(token);
+    return {
+      accepting: settings.accepting, term: "Ganjil", semesterStart: SEMESTER_START, totalWeeks: TOTAL_WEEKS, currentWeek: current(),
+      adminEmails: ["admin.wry@example.com", "ketua.wry@example.com"], designEmails: ["design.wry@example.com"],
+      spreadsheetUrl: s.role === "admin" ? "https://docs.google.com/spreadsheets/" : "",
+      matkul: await matkul(),
+    };
+  }
+
+  // ───── Export IG (mock): tidak ada Drive; folder & file hanya dicatat di memori ─────
+  const exportsLog = [];
+  async function getExportData(token, week) {
+    session(token);
+    const cur = current();
+    const w = week == null ? cur : Number(week);
+    const ms = await matkul();
+    const hariOf = (t) => (ms.find((m) => slotKey(m.semester, m.matkul, m.kelas) === slotKey(t.semester, t.matkul, t.kelas)) || {}).hari || "";
+    const all = await rows(w);
+    const tasks = all.filter((t) => t.status === "ada").map((t) => ({ semester: t.semester, hari: hariOf(t), matkul: t.matkul, kelas: t.kelas, deskripsi: t.deskripsi, deadline: t.deadline }))
+      .sort((a, b) => a.semester - b.semester || DAYS.indexOf(a.hari) - DAYS.indexOf(b.hari) || a.matkul.localeCompare(b.matkul) || a.kelas.localeCompare(b.kelas));
+    const last = exportsLog.filter((e) => e.week === w).pop() || null;
+    const start = first + 7 * (w - 1);
+    return {
+      week: w, currentWeek: cur, maxWeek: Math.min(TOTAL_WEEKS, cur + 1), term: "Ganjil", start: isoOf(start), end: isoOf(start + 6),
+      semesters: [...new Set(ms.map((m) => m.semester))].sort(), tasks, lastExport: last,
+      changedSince: last ? all.filter((t) => t.diubah > last.waktu).length : 0, publicUrl: location.origin + "/",
+    };
+  }
+  async function beginExport(token) { session(token); return { folderId: "mockFolder" + Date.now() }; }
+  async function uploadExportSlide(token, folderId, index, name, base64) {
+    session(token);
+    const bin = atob(base64.slice(0, 400));
+    if (bin.charCodeAt(0) !== 0xff || bin.charCodeAt(1) !== 0xd8) throw new Error("Slide harus JPEG 1080 × 1350.");
+    console.info("[mock] slide", index + 1, name, Math.round(base64.length * 0.75 / 1024) + " KB");
+    return { index };
+  }
+  async function finishExport(token, week, folderId, count) {
+    const s = session(token);
+    const rec = { week: Number(week), waktu: new Date().toISOString(), oleh: s.email, slides: count, url: folderId ? "https://drive.google.com/drive/folders/" + folderId : "" };
+    exportsLog.push(rec);
+    return rec;
+  }
+
+  const api = {
+    getExportData, beginExport, uploadExportSlide, finishExport,
+    getBoard, getFormOptions, checkExisting, saveTasks, deleteTask,
+    requestOtp, verifyOtp, adminSession, adminLogout, adminStatus, adminTasks, adminHistory,
+    adminUpdateTask, adminDeleteTask, adminRestoreTask, adminSetAccepting, adminSettings,
+  };
   function runner(success, failure) {
     return new Proxy({}, {
       get(_, name) {

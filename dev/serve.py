@@ -19,10 +19,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def do_GET(self):
-        path = self.path.split("?", 1)[0].split("#", 1)[0]
+        path, _, query = self.path.split("#", 1)[0].partition("?")
         if path in ("/", "/index.html"):
-            html = (ROOT / "gas" / "Index.html").read_text(encoding="utf-8")
-            boot = json.dumps({"assetBase": "/assets", "title": "WRY (dev)", "ready": True})
+            admin = "page=admin" in query.split("&")
+            html = (ROOT / "gas" / ("Admin.html" if admin else "Index.html")).read_text(encoding="utf-8")
+            boot = json.dumps({"assetBase": "/assets", "title": "WRY (dev)", "ready": True,
+                               "publicUrl": f"http://127.0.0.1:{PORT}/"})
             html = html.replace("<?!= boot ?>", boot.replace("<", "\\u003c"))
             html = html.replace("</head>", '<script src="/dev/mock.js"></script>\n</head>', 1)
             body = html.encode("utf-8")
@@ -34,6 +36,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
         super().do_GET()
+
+    def do_PUT(self):
+        """Dev saja: simpan hasil render (mis. slide IG) ke dev/_out/ untuk dicek visual."""
+        name = self.path.rsplit("/", 1)[-1]
+        if not self.path.startswith("/dev/_out/") or not name or "/" in name or ".." in name:
+            self.send_error(400)
+            return
+        out = ROOT / "dev" / "_out"
+        out.mkdir(exist_ok=True)
+        length = int(self.headers.get("Content-Length", 0))
+        (out / name).write_bytes(self.rfile.read(length))
+        self.send_response(204)
+        self.end_headers()
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")

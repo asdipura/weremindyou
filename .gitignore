@@ -10,3 +10,6 @@ Hero Image*.jpg
 
 # File sumber background (23 MB); versi web ada di assets/bg-wall*.webp
 BG IGS*.png
+
+# Hasil render dev (dev/serve.py PUT /dev/_out/)
+dev/_out/
