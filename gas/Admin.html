@@ -89,10 +89,16 @@
     }
     .input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(3,129,185,.25); }
     .input[aria-invalid="true"] { border-color: var(--red); }
-    .input--code { font: 600 26px/1 "Poppins", sans-serif; letter-spacing: .4em; text-align: center; }
     textarea.input { min-height: 80px; resize: vertical; }
     select.input { appearance: none; padding-right: 36px; background: #fffdf8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231d1d1b' stroke-width='2.2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 18px; }
     .row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .password { position: relative; }
+    .password .input { padding-right: 76px; }
+    .password__toggle {
+      position: absolute; top: 4px; right: 4px; min-width: 64px; min-height: 40px; border: 0; border-radius: 3px; background: transparent; cursor: pointer;
+      font: 600 13px/1 "Plus Jakarta Sans", sans-serif; color: var(--blue-ink);
+    }
+    @media (hover: hover) { .password__toggle:hover { background: rgba(0,0,0,.06); } }
     .link { background: none; border: 0; padding: 4px 0; color: var(--blue-ink); font-weight: 600; text-decoration: underline; cursor: pointer; }
     .link:disabled { color: var(--ink-3); text-decoration: none; cursor: default; }
 
@@ -163,8 +169,7 @@
     .task-row__meta { font-size: 12px; color: var(--ink-3); }
     .task-row__desc { margin: 6px 0 0; overflow-wrap: anywhere; }
     .task-row__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .task-row__edit { display: grid; gap: 10px; margin-top: 10px; grid-template-columns: 1fr 180px; align-items: start; }
-    @media (max-width: 640px) { .task-row__edit { grid-template-columns: 1fr; } }
+    .task-row__edit { display: grid; gap: 10px; margin-top: 10px; }
     .badge { padding: 2px 7px; border-radius: 3px; font: 600 11px/1.4 "Poppins", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
     .badge--ada { background: #dcecf4; color: var(--blue-ink); }
     .badge--tidak-ada { background: var(--green-bg); color: var(--green); }
@@ -217,30 +222,24 @@
       <div class="sheet grain">
         <div>
           <h1 id="loginTitle" tabindex="-1">Masuk <i>backoffice</i></h1>
-          <p class="lead" id="loginLead">Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.</p>
+          <p class="lead" id="loginLead">Khusus admin WRY dan tim design. Akun dibuat admin WRY di Spreadsheet (tab Akun).</p>
           <div id="loginAlert"></div>
 
-          <form id="emailForm" novalidate>
+          <form id="loginForm" novalidate>
             <div class="field">
               <label class="field__label" for="email">Email</label>
-              <input class="input" id="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="emailErr">
+              <input class="input" id="email" type="email" autocomplete="username" inputmode="email" required aria-describedby="emailErr">
               <p class="field__error" id="emailErr"></p>
             </div>
-            <button class="btn btn--primary btn--big" type="submit" id="sendBtn">Kirim kode</button>
-          </form>
-
-          <form id="codeForm" novalidate hidden>
             <div class="field">
-              <label class="field__label" for="code">Kode 6 angka</label>
-              <input class="input input--code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-describedby="codeHint codeErr">
-              <p class="field__hint" id="codeHint"></p>
-              <p class="field__error" id="codeErr"></p>
+              <label class="field__label" for="password">Password</label>
+              <div class="password">
+                <input class="input" id="password" type="password" autocomplete="current-password" required aria-describedby="passwordErr">
+                <button class="password__toggle" type="button" id="showPassword" aria-pressed="false" aria-controls="password">Lihat</button>
+              </div>
+              <p class="field__error" id="passwordErr"></p>
             </div>
-            <button class="btn btn--primary btn--big" type="submit" id="verifyBtn">Masuk</button>
-            <div class="row-actions">
-              <button class="link" type="button" id="resendBtn">Kirim ulang kode</button>
-              <button class="link" type="button" id="changeEmail">Ganti email</button>
-            </div>
+            <button class="btn btn--primary btn--big" type="submit" id="loginBtn">Masuk</button>
           </form>
         </div>
       </div>
@@ -408,9 +407,7 @@
         }
       }
 
-      // ───── Login ─────
-      let loginEmail = "";
-      let resendTimer;
+      // ───── Login (email + password dari tab Akun) ─────
       function loginAlert(kind, title, text) {
         const host = $("loginAlert");
         host.textContent = "";
@@ -421,84 +418,46 @@
         store.del(TOKEN_KEY);
         $("appView").hidden = true;
         $("loginView").hidden = false;
-        $("emailForm").hidden = false;
-        $("codeForm").hidden = true;
+        $("loginForm").hidden = false;
+        $("loginLead").textContent = "Khusus admin WRY dan tim design. Akun dibuat admin WRY di Spreadsheet (tab Akun).";
+        $("password").value = "";
         loginAlert(message ? "error" : "", message ? "Silakan masuk lagi" : "", message || "");
-        $("email").value = loginEmail || store.get("wry.admin.email") || "";
-        $("email").focus();
+        $("email").value = store.get("wry.admin.email") || "";
+        ($("email").value ? $("password") : $("email")).focus();
       }
-      function startResendCountdown(seconds) {
-        const btn = $("resendBtn");
-        let left = seconds;
-        clearInterval(resendTimer);
-        const tick = () => {
-          btn.disabled = left > 0;
-          btn.textContent = left > 0 ? "Kirim ulang kode (" + left + " dtk)" : "Kirim ulang kode";
-          left--;
-          if (left < -1) clearInterval(resendTimer);
-        };
-        tick();
-        resendTimer = setInterval(tick, 1000);
+      function fieldError(input, node, message) {
+        node.textContent = message;
+        if (message) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
       }
-      async function sendCode(btn) {
-        const value = $("email").value.trim();
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          $("emailErr").textContent = "Tulis alamat email yang valid.";
-          $("email").setAttribute("aria-invalid", "true");
-          $("email").focus();
-          return;
-        }
-        loginEmail = value.toLowerCase();
-        try {
-          const res = await busy(btn, "Mengirim…", () => call("requestOtp", loginEmail));
-          store.set("wry.admin.email", loginEmail);
-          $("emailForm").hidden = true;
-          $("codeForm").hidden = false;
-          $("codeHint").textContent = "Dikirim ke " + loginEmail + ". Berlaku 10 menit.";
-          loginAlert("ok", "Cek email kamu", res.message);
-          $("code").value = "";
-          $("code").focus();
-          startResendCountdown(60);
-        } catch (err) {
-          loginAlert("error", "Kode belum terkirim", cleanError(err));
-        }
-      }
-      $("emailForm").addEventListener("submit", (e) => { e.preventDefault(); sendCode($("sendBtn")); });
-      $("email").addEventListener("input", () => { $("emailErr").textContent = ""; $("email").removeAttribute("aria-invalid"); });
-      $("resendBtn").addEventListener("click", async () => {
-        try {
-          await busy($("resendBtn"), "Mengirim…", () => call("requestOtp", loginEmail));
-          loginAlert("ok", "Kode baru dikirim", "Pakai kode terbaru; kode lama tidak berlaku.");
-          startResendCountdown(60);
-        } catch (err) { loginAlert("error", "Kode belum terkirim", cleanError(err)); }
-      });
-      $("changeEmail").addEventListener("click", () => { clearInterval(resendTimer); showLogin(""); });
-      $("code").addEventListener("input", () => {
-        $("code").value = $("code").value.replace(/\D/g, "").slice(0, 6);
-        $("codeErr").textContent = "";
-        $("code").removeAttribute("aria-invalid");
-        if ($("code").value.length === 6) $("codeForm").requestSubmit();
-      });
-      $("codeForm").addEventListener("submit", async (e) => {
+      $("loginForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        const code = $("code").value;
-        if (!/^\d{6}$/.test(code)) {
-          $("codeErr").textContent = "Kode terdiri dari 6 angka.";
-          $("code").setAttribute("aria-invalid", "true");
-          return;
-        }
-        if ($("verifyBtn").disabled) return;
+        if ($("loginBtn").disabled) return;
+        const email = $("email").value.trim().toLowerCase();
+        const password = $("password").value;
+        fieldError($("email"), $("emailErr"), email ? "" : "Tulis email akunmu.");
+        fieldError($("password"), $("passwordErr"), password ? "" : "Tulis password.");
+        if (!email) { $("email").focus(); return; }
+        if (!password) { $("password").focus(); return; }
+        loginAlert("", "", "");
         try {
-          const res = await busy($("verifyBtn"), "Memeriksa…", () => call("verifyOtp", loginEmail, code));
-          clearInterval(resendTimer);
+          const res = await busy($("loginBtn"), "Memeriksa…", () => call("adminLogin", email, password));
+          store.set("wry.admin.email", email);
           store.set(TOKEN_KEY, res.token);
+          $("password").value = "";
           session = { token: res.token, email: res.email, role: res.role, canEdit: res.role === "admin" };
           enterApp();
         } catch (err) {
-          $("codeErr").textContent = cleanError(err);
-          $("code").setAttribute("aria-invalid", "true");
-          $("code").select();
+          loginAlert("error", "Belum bisa masuk", cleanError(err));
+          $("password").select();
+          $("password").focus();
         }
+      });
+      ["email", "password"].forEach((id) => $(id).addEventListener("input", () => fieldError($(id), $(id + "Err"), "")));
+      $("showPassword").addEventListener("click", () => {
+        const show = $("password").type === "password";
+        $("password").type = show ? "text" : "password";
+        $("showPassword").textContent = show ? "Sembunyi" : "Lihat";
+        $("showPassword").setAttribute("aria-pressed", String(show));
       });
       $("logoutBtn").addEventListener("click", async () => {
         const token = session && session.token;
@@ -765,7 +724,7 @@
           el("div", { class: "task-row__head" }, [
             el("h3", { class: "task-row__title", text: t.matkul + " - " + t.kelas }),
             el("span", { class: "badge badge--" + t.status, text: STATUS_LABEL[t.status] || t.status }),
-            el("span", { class: "task-row__meta", text: "Smt " + t.semester + " · " + (t.hari || "—") + (t.deadline ? " · deadline " + shortDate(t.deadline) : "") }),
+            el("span", { class: "task-row__meta", text: "Smt " + t.semester + " · " + (t.hari || "—") + (t.tanggal && t.status === "ada" ? " · " + shortDate(t.tanggal) : "") }),
           ]),
           el("p", { class: "task-row__desc", text: desc }),
           el("p", { class: "task-row__meta", text: "oleh " + (t.pengisi || "—") + " · diubah " + stamp(t.diubah) }),
@@ -791,12 +750,10 @@
       function startEdit(row, t) {
         const area = el("textarea", { class: "input", maxlength: "160", "aria-label": "Deskripsi tugas" });
         area.value = t.deskripsi;
-        const date = el("input", { class: "input", type: "date", "aria-label": "Deadline" });
-        date.value = t.deadline;
         const err = el("p", { class: "field__error", role: "alert" });
         const save = el("button", { class: "btn btn--primary", type: "button", text: "Simpan" });
         const cancel = el("button", { class: "btn", type: "button", text: "Batal" });
-        const form = el("div", null, [el("div", { class: "task-row__edit" }, [area, date]), err, el("div", { class: "task-row__actions" }, [save, cancel])]);
+        const form = el("div", null, [el("div", { class: "task-row__edit" }, [area]), err, el("div", { class: "task-row__actions" }, [save, cancel])]);
         const descNode = row.querySelector(".task-row__desc");
         const actions = row.querySelector(".task-row__actions");
         descNode.hidden = true; actions.hidden = true;
@@ -805,9 +762,8 @@
         cancel.addEventListener("click", () => { form.remove(); descNode.hidden = false; actions.hidden = false; actions.querySelector("button").focus(); });
         save.addEventListener("click", async () => {
           if (!area.value.trim()) { err.textContent = "Deskripsi tidak boleh kosong."; area.focus(); return; }
-          if (!date.value) { err.textContent = "Pilih tanggal deadline."; date.focus(); return; }
           try {
-            await busy(save, "Menyimpan…", () => api("adminUpdateTask", t.id, { deskripsi: area.value.trim(), deadline: date.value }));
+            await busy(save, "Menyimpan…", () => api("adminUpdateTask", t.id, { deskripsi: area.value.trim() }));
             toast("Tugas diperbarui.");
             await refreshData();
           } catch (e) { err.textContent = cleanError(e); }
@@ -851,9 +807,8 @@
             const changes = [];
             if (h.sebelum && h.sesudah) {
               if (h.sebelum.deskripsi !== h.sesudah.deskripsi) changes.push("deskripsi: “" + (h.sebelum.deskripsi || "—") + "” → “" + (h.sesudah.deskripsi || "—") + "”");
-              if (h.sebelum.deadline !== h.sesudah.deadline) changes.push("deadline: " + shortDate(h.sebelum.deadline) + " → " + shortDate(h.sesudah.deadline));
             } else if (h.sesudah && h.sesudah.deskripsi) {
-              changes.push("“" + h.sesudah.deskripsi + "”, deadline " + shortDate(h.sesudah.deadline));
+              changes.push("“" + h.sesudah.deskripsi + "”");
             }
             list.append(el("li", null, [
               el("time", { datetime: h.waktu, text: stamp(h.waktu) }),
@@ -867,7 +822,7 @@
       }
 
       // ───── Tab Export IG ─────
-      // Renderer slide 1080×1350 mengikuti Figma: cover (node 47:1153) & slide semester (node 48:1802).
+      // Renderer slide 1080×1350 mengikuti Figma: cover (node 165:528, header baru) & slide semester (node 48:1802).
       const MONTHS_LONG = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
       const IG = {
         W: 1080, H: 1350,
@@ -1033,10 +988,10 @@
         const m = lineMetrics(ctx);
         const descTop = colTop + R.titleH + R.descGap;
         r.lines.forEach((line, i) => ctx.fillText(line, R.x, descTop + i * m.height + m.ascent));
-        drawSticky(ctx, R.x + R.colW + R.gap, rowTop + (r.h - IG.sticky.h) / 2, t.deadline, a);
+        drawSticky(ctx, R.x + R.colW + R.gap, rowTop + (r.h - IG.sticky.h) / 2, t.tanggal, a);
       }
 
-      /** Sticky note deadline (Figma 48:1872): gambar dipotong 156.35% × 129.26%, geser −29.72% / −9.77%, bayangan 4.37/4.37/5.618. */
+      /** Sticky note tanggal tugas diberikan (Figma 48:1872): gambar dipotong 156.35% × 129.26%, geser −29.72% / −9.77%, bayangan 4.37/4.37/5.618. */
       function drawSticky(ctx, sx, sy, iso, a) {
         const S = IG.sticky;
         ctx.save();
@@ -1103,7 +1058,7 @@
             const day = tasks.filter((t) => t.hari === hari);
             if (!day.length) return;
             lines.push(hari);
-            day.forEach((t) => lines.push("• " + t.matkul + " - " + t.kelas + ": " + t.deskripsi + " (deadline " + shortDate(t.deadline) + ")"));
+            day.forEach((t) => lines.push("• " + t.matkul + " - " + t.kelas + ": " + t.deskripsi + " (" + shortDate(t.tanggal) + ")"));
           });
         });
         lines.push("", "Tugas kelasmu belum ada? Tambahkan di: " + (data.publicUrl || boot.publicUrl || ""), "", "#WeRemindYou #HIMAIDEITS");
@@ -1257,6 +1212,17 @@
       }
 
       // ───── Tab Pengaturan ─────
+      function accountsTable(list) {
+        return el("div", { class: "table-scroll", style: "margin-top:16px" }, [el("table", { class: "matkul-table" }, [
+          el("caption", { class: "sr-only", text: "Akun backoffice" }),
+          el("thead", null, [el("tr", null, ["Akun backoffice", "Peran", "Status"].map((h) => el("th", { scope: "col", text: h })))]),
+          el("tbody", null, (list || []).map((a) => el("tr", null, [
+            el("td", { text: a.email }),
+            el("td", { text: a.role === "admin" ? "Admin" : a.role === "design" ? "Tim design" : a.role || "—" }),
+            el("td", { text: a.active ? "Aktif" : "Nonaktif" }),
+          ]))),
+        ])]);
+      }
       function renderSettings(pane) {
         const s = A.settings;
         pane.textContent = "";
@@ -1290,10 +1256,10 @@
             el("dt", { text: "Semester" }), el("dd", { text: s.term }),
             el("dt", { text: "Minggu ke-1" }), el("dd", { text: shortDate(s.semesterStart) + " " + s.semesterStart.slice(0, 4) }),
             el("dt", { text: "Minggu berjalan" }), el("dd", { text: s.currentWeek + " dari " + s.totalWeeks }),
-            el("dt", { text: "Admin" }), el("dd", { text: s.adminEmails.join(", ") || "—" }),
-            el("dt", { text: "Tim design" }), el("dd", { text: s.designEmails.join(", ") || "—" }),
+            el("dt", { text: "Email Jumat" }), el("dd", { text: s.designEmails.join(", ") || "—" }),
           ]),
-          el("p", { class: "field__hint", text: "Tanggal mulai semester, daftar email, dan daftar matkul diubah langsung di Spreadsheet (tab Config & Matkul)." }),
+          session.canEdit ? accountsTable(s.accounts) : null,
+          el("p", { class: "field__hint", text: "Akun (email, password, peran), tanggal mulai semester, dan daftar matkul diubah langsung di Spreadsheet (tab Akun, Config, Matkul)." }),
           s.spreadsheetUrl ? el("div", { class: "row-actions" }, [el("a", { class: "btn", href: s.spreadsheetUrl, target: "_blank", rel: "noopener", text: "Buka Spreadsheet" })]) : null,
         ])]);
 
@@ -1321,23 +1287,23 @@
       async function start() {
         if (boot.ready === false) {
           $("loginView").hidden = false;
-          $("emailForm").hidden = true;
+          $("loginForm").hidden = true;
           loginAlert("error", "Sistem belum disiapkan", "Jalankan setupSheet di Apps Script lalu muat ulang halaman ini.");
           return;
         }
         const token = store.get(TOKEN_KEY);
         if (!token) { showLogin(""); return; }
         $("loginView").hidden = false;
-        $("emailForm").hidden = true;
+        $("loginForm").hidden = true;
         loginAlert("", "", "");
         $("loginLead").textContent = "Memeriksa sesi…";
         try {
           const s = await call("adminSession", token);
           session = Object.assign({ token: token }, s);
-          $("loginLead").textContent = "Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.";
+          $("loginLead").textContent = "Khusus admin WRY dan tim design. Akun dibuat admin WRY di Spreadsheet (tab Akun).";
           enterApp();
         } catch (err) {
-          $("loginLead").textContent = "Khusus admin WRY dan tim design. Kode masuk dikirim ke email yang terdaftar.";
+          $("loginLead").textContent = "Khusus admin WRY dan tim design. Akun dibuat admin WRY di Spreadsheet (tab Akun).";
           showLogin(/SESI_HABIS/.test(err.message) ? cleanError(err) : "");
         }
       }

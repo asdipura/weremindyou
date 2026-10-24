@@ -263,7 +263,6 @@
     }
     .sticky__mon { font: italic 400 15px/1 "Instrument Serif", serif; color: #3a3a3a; }
     .sticky__day { font: 400 34px/1 "Instrument Serif", serif; color: var(--red); }
-    .sticky.is-past { filter: grayscale(.9); opacity: .65; }
     .card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--paper-edge); font-size: 12px; color: var(--ink-3); }
     .link-btn {
       display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25);
@@ -280,6 +279,7 @@
       color: var(--stamp); font: 700 14px/1.2 "Poppins", sans-serif; letter-spacing: .08em; transform: rotate(-4deg); opacity: .85;
     }
     .card--none .card__foot { border: 0; padding-top: 4px; }
+    button.slot { font-family: inherit; }
 
     .empty-slots { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .empty-slots__label { font: 600 13px/1.2 "Plus Jakarta Sans", sans-serif; color: #fff7ea; text-shadow: 0 1px 2px rgba(0,0,0,.6); margin-right: 4px; }
@@ -425,10 +425,113 @@
 
     body.is-form .hero, body.is-form .upload-band { display: none; }
 
+    /* ───────── Popup kertas (sama dengan kartu di papan: kertas putih + selotip) ───────── */
+    .note-dlg { position: fixed; width: min(480px, 100% - 24px); max-height: calc(100dvh - 32px); padding: 16px 0 0; border: 0; background: transparent; overflow: visible; }
+    .note-dlg::backdrop { background: rgba(20,20,18,.6); transition: opacity var(--t-motion) var(--ease-out); }
+    .note-dlg.is-entering::backdrop, .note-dlg.is-leaving::backdrop { opacity: 0; }
+    .note {
+      position: relative; min-height: 320px; max-height: calc(100dvh - 48px); overflow-y: auto; padding: 32px clamp(18px, 5vw, 28px) 22px;
+      background: linear-gradient(180deg, var(--paper), #efece3);
+      box-shadow: 0 22px 44px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.25); border-radius: 1px; color: var(--ink);
+    }
+    .note > * { position: relative; z-index: 2; }
+    .note.grain::after { opacity: .3; }
+    /* Selotip di luar area scroll supaya tidak terpotong. */
+    .note-dlg::before, .paper-shell::before {
+      content: ""; position: absolute; top: 4px; left: 50%; width: 110px; height: 28px; margin-left: -55px; z-index: 3;
+      background: rgba(238, 230, 200, .78); box-shadow: 0 1px 2px rgba(0,0,0,.15); transform: rotate(-2deg);
+    }
+    .paper-shell::before { top: -10px; width: min(110px, 40%); margin-left: max(-55px, -20%); }
+    .note__close { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 4px; background: transparent; color: var(--ink-2); cursor: pointer; }
+    .note__close svg { width: 22px; height: 22px; }
+    @media (hover: hover) { .note__close:hover { background: rgba(0,0,0,.06); } }
+    .note__meta { margin: 0 44px 4px 0; font: 600 12px/1.4 "Plus Jakarta Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+    .note__title { margin: 0 44px 16px 0; font: 400 34px/1.05 "Instrument Serif", serif; color: var(--blue-ink); outline: none; }
+    .note__loading { margin: 8px 0 4px; color: var(--ink-2); }
+    .note__toggle { display: flex; margin: 0 0 6px; padding: 3px; border: 0; border-radius: 6px; background: rgba(0,0,0,.07); }
+    .note__toggle label { flex: 1; position: relative; }
+    .note__toggle input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+    .note__toggle span {
+      display: grid; place-items: center; min-height: 40px; padding: 0 10px; border-radius: 4px;
+      font: 600 14px/1.1 "Poppins", sans-serif; color: var(--ink-2); text-align: center; transition: background-color var(--t-fast);
+    }
+    .note__toggle input:checked + span { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .note__toggle input:checked[value="tidak-ada"] + span { color: var(--stamp); }
+    .note__toggle input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 1px; }
+    .note__toggle input:disabled + span { opacity: .45; }
+    .note__toggle input:disabled { cursor: not-allowed; }
+    .note__hint { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); }
+    .note__hint:empty { display: none; }
+    .note__tasks { list-style: none; margin: 16px 0 6px; padding: 0; display: grid; gap: 18px; }
+    .note__tasks > li + li { padding-top: 16px; border-top: 1px dashed rgba(0,0,0,.2); }
+    .note-task__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .note-task__title { font: italic 400 24px/1 "Instrument Serif", serif; color: #3a3a3a; }
+    .note-task__badge { margin-left: 8px; font: 600 11px/1 "Plus Jakarta Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+    .note__field { margin-top: 10px; }
+    .note__field label { display: block; margin-bottom: 4px; font: 600 13px/1.3 "Plus Jakarta Sans", sans-serif; color: var(--ink-2); }
+    .note__optional { font-weight: 400; color: var(--ink-3); }
+    .note__input {
+      display: block; width: 100%; min-height: 44px; padding: 8px 10px; border: 0; border-bottom: 2px solid #8e8a7e; border-radius: 3px 3px 0 0;
+      background: rgba(255,255,255,.75); color: var(--ink); font: 400 16px/1.4 "Plus Jakarta Sans", sans-serif;
+    }
+    textarea.note__input { min-height: 72px; resize: vertical; }
+    .note__input:focus { outline: none; background: #fff; border-bottom-color: var(--blue); box-shadow: 0 2px 0 var(--blue); }
+    .note__input[aria-invalid="true"] { border-bottom-color: #b3261e; }
+    .note__error { margin: 4px 0 0; font: 600 13px/1.35 "Plus Jakarta Sans", sans-serif; color: #b3261e; }
+    .note__error:empty { display: none; }
+    .note__counter { float: right; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+    .note__link {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 6px; margin-left: -6px; border: 0; border-radius: 4px;
+      background: transparent; color: var(--blue-ink); font: 600 14px/1 "Plus Jakarta Sans", sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+    }
+    .note__link svg { width: 16px; height: 16px; }
+    @media (hover: hover) { .note__link:hover { background: rgba(0,0,0,.05); } }
+    .note__link--danger { color: #b3261e; }
+    .note__name { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--paper-edge); }
+    .note__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .note__btn {
+      min-height: 44px; padding: 0 18px; border: 1px solid rgba(0,0,0,.25); border-radius: 4px; background: #fffdf8; cursor: pointer;
+      font: 600 14px/1 "Plus Jakarta Sans", sans-serif; color: var(--ink); transition: background-color var(--t-fast), transform var(--t-fast);
+    }
+    @media (hover: hover) { .note__btn:hover { background: #fff; } }
+    .note__btn:active { transform: translateY(1px); }
+    .note__btn--save { border-color: var(--blue); background: var(--blue); color: #fff; font-family: "Poppins", sans-serif; letter-spacing: .03em; }
+    @media (hover: hover) { .note__btn--save:hover { background: var(--blue-hover); } }
+    .note__btn--save:active { background: var(--blue-press); }
+    .note__btn[aria-busy="true"] { cursor: progress; opacity: .75; }
+    .note .callout { margin-bottom: 14px; }
+
+    /* ───────── Gerak kertas: papan ⇄ tengah layar ───────── */
+    :root { --t-motion: 320ms; }
+    /* Kertas kosong yang terbang antara posisi kartu dan popup (di dalam dialog agar berada di top layer). */
+    .paper-shell {
+      position: fixed; z-index: 5; pointer-events: none; border-radius: 1px;
+      background: linear-gradient(180deg, var(--paper), #efece3); box-shadow: 0 22px 44px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.25);
+    }
+    .card.is-lifted, .note-dlg.is-shell-only .note { visibility: hidden; }
+    .note-dlg.is-shell-only::before { visibility: hidden; }
+    /* Selotip ditempel ulang setelah kertas kembali ke papan. */
+    .card.is-taped::before { animation: tape-stick 520ms var(--ease-out) both; }
+    .card.is-taped { animation: paper-press 420ms var(--ease-out) both; }
+    @keyframes tape-stick {
+      0% { opacity: 0; transform: translate(-18px, -26px) rotate(-14deg) scale(1.25); }
+      60% { opacity: 1; transform: translate(0, 2px) rotate(-1deg) scale(.98); }
+      100% { opacity: 1; transform: rotate(-2deg); }
+    }
+    /* Pakai properti scale (bukan transform) supaya kemiringan kartu (rotate) tetap. */
+    @keyframes paper-press { 0% { scale: 1.03; } 55% { scale: .99; } 100% { scale: 1; } }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 20px; z-index: 60; transform: translateX(-50%); max-width: calc(100% - 32px);
+      padding: 12px 16px; border-radius: 4px; background: #1b1b1b; color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.4);
+      font: 500 14px/1.4 "Plus Jakarta Sans", sans-serif;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: 0ms !important; animation: none !important; }
       .plate:hover, .plate:active { transform: none !important; }
       .plate:hover .plate__bolt, .plate:active .plate__bolt { transform: none !important; }
+      .card.is-taped, .card.is-taped::before { animation: none !important; }
     }
   </style>
 </head>
@@ -538,6 +641,7 @@
                 </fieldset>
 
                 <div id="taskArea">
+                  <p class="field__hint" id="taskDate"></p>
                   <ol class="task-list" id="taskList"></ol>
                   <button class="link-btn add-task" type="button" id="addTask">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -581,11 +685,51 @@
         </div>
       </form>
     </dialog>
+
+    <!-- Popup isi cepat dari papan tugas: seperti mengisi sticky note. -->
+    <dialog class="note-dlg" id="noteDlg" aria-labelledby="noteTitle" aria-describedby="noteMeta">
+      <form class="note grain" id="noteForm" novalidate autocomplete="off">
+        <button class="note__close" type="button" id="noteClose" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <p class="note__meta" id="noteMeta"></p>
+        <h2 class="note__title" id="noteTitle" tabindex="-1"></h2>
+        <div id="noteAlert"></div>
+        <p class="note__loading" id="noteLoading" hidden>Memuat tugas kelas ini…</p>
+        <div id="noteBody" hidden>
+          <fieldset class="note__toggle">
+            <legend class="sr-only">Minggu ini ada tugas?</legend>
+            <label><input type="radio" name="noteMode" value="ada"><span>Ada tugas</span></label>
+            <label><input type="radio" name="noteMode" value="tidak-ada" id="noteModeNone"><span>Tidak ada tugas</span></label>
+          </fieldset>
+          <p class="note__hint" id="noteModeHint"></p>
+          <div id="noteTaskArea">
+            <ol class="note__tasks" id="noteTasks"></ol>
+            <button class="note__link" type="button" id="noteAdd">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Tambah tugas lain
+            </button>
+          </div>
+          <div class="note__name">
+            <button class="note__link" type="button" id="noteNameToggle" aria-expanded="false" aria-controls="noteNameField"></button>
+            <div class="note__field" id="noteNameField" hidden>
+              <label for="noteName">Nama pengisi <span class="note__optional">(opsional)</span></label>
+              <input class="note__input" id="noteName" autocomplete="name" maxlength="60" aria-describedby="noteNameHint">
+              <p class="note__hint" id="noteNameHint">Kalau dikosongkan, tertulis “Kontributor Kelas”.</p>
+            </div>
+          </div>
+          <div class="note__actions">
+            <button class="note__btn" type="button" id="noteCancel">Batal</button>
+            <button class="note__btn note__btn--save" type="submit" id="noteSave">Simpan</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
   </main>
 
   <footer class="site-foot">
     <span>@industrialdesignits</span><span>@himaideits</span><span>HIMA IDE ITS</span>
   </footer>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <template id="boltTpl"><span class="bolt" aria-hidden="true"><img data-asset="baut.png" alt=""></span></template>
 
@@ -663,7 +807,6 @@
 
       // ───── Format tanggal ─────
       const parseIso = (iso) => { const p = iso.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); };
-      const todayIso = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); // WIB
       function shortDate(iso) { const d = parseIso(iso); return DAYS_SHORT[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()]; }
       function longDate(iso) { const d = parseIso(iso); return d.getDate() + " " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear(); }
       function addDays(iso, n) { const d = parseIso(iso); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -729,9 +872,7 @@
       // ───── Papan ─────
       function renderBoard(d) {
         $("boardTitle").innerHTML = "Papan tugas <em>minggu " + d.week + "</em>";
-        const deadlineStart = addDays(d.end, 3), deadlineEnd = addDays(d.end, 7);
-        $("boardRange").textContent = "Tugas yang dilaporkan " + shortDate(d.start) + " – " + shortDate(d.end) +
-          ", dengan deadline sekitar " + shortDate(deadlineStart) + " – " + shortDate(deadlineEnd) + ".";
+        $("boardRange").textContent = "Tugas yang diberikan di perkuliahan " + shortDate(addDays(d.start, 2)) + " – " + shortDate(addDays(d.start, 6)) + ".";
         renderFilter(d);
         renderPanels(d);
       }
@@ -784,13 +925,13 @@
         const filled = g.classes.filter((c) => c.status !== "kosong");
         const empty = g.classes.filter((c) => c.status === "kosong");
         const node = el("div", { class: "group" }, [el("h5", { class: "tape-label", text: g.name })]);
-        if (filled.length) node.append(el("div", { class: "cards" }, filled.map((c) => c.status === "ada" ? taskCard(s, g, c) : noneCard(g, c))));
+        if (filled.length) node.append(el("div", { class: "cards" }, filled.map((c) => c.status === "ada" ? taskCard(s, g, c) : noneCard(s, g, c))));
         if (empty.length) {
           const row = el("div", { class: "empty-slots" }, [el("span", { class: "empty-slots__label", text: filled.length ? "Belum ada info:" : "Belum ada info" })]);
-          empty.forEach((c) => row.append(el("a", {
-            class: "slot", href: "#unggah",
+          empty.forEach((c) => row.append(el("button", {
+            class: "slot", type: "button", "data-slot": slotId(s.semester, g.name, c.kelas),
             "aria-label": "Isi tugas " + g.name + " kelas " + c.kelas,
-            onclick: (e) => { e.preventDefault(); go({ week: d.week, view: "unggah", prefill: { week: d.week, semester: s.semester, matkul: g.name, kelas: c.kelas } }); },
+            onclick: (e) => openNote({ week: d.week, semester: s.semester, matkul: g.name, kelas: c.kelas, hari: c.hari }, e.currentTarget),
             html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
           }, [document.createTextNode("Kelas " + c.kelas)])));
           node.append(row);
@@ -799,7 +940,6 @@
       }
 
       function taskCard(s, g, c) {
-        const today = todayIso();
         const latest = c.tasks.reduce((a, t) => (t.diubah > a.diubah ? t : a), c.tasks[0]);
         return el("article", { class: "card grain", "aria-label": g.name + " kelas " + c.kelas }, [
           el("div", { class: "card__head" }, [
@@ -807,32 +947,38 @@
           ]),
           ...c.tasks.map((t) => el("div", { class: "task" }, [
             el("p", { class: "task__desc", text: t.deskripsi }),
-            sticky(t.deadline, t.deadline < today),
+            sticky(t.tanggal),
           ])),
           el("div", { class: "card__foot" }, [
             el("span", { text: "oleh " + latest.pengisi + " · " + ago(latest.diubah) }),
-            el("a", { class: "link-btn", href: "#unggah", text: "Edit", "aria-label": "Edit tugas " + g.name + " kelas " + c.kelas,
-              onclick: (e) => { e.preventDefault(); go({ week: state.week, view: "unggah", prefill: { week: state.week, semester: s.semester, matkul: g.name, kelas: c.kelas, intent: "edit" } }); } }),
+            el("button", { class: "link-btn", type: "button", text: "Edit", "data-slot": slotId(s.semester, g.name, c.kelas), "aria-label": "Edit tugas " + g.name + " kelas " + c.kelas,
+              onclick: (e) => openNote({ week: state.week, semester: s.semester, matkul: g.name, kelas: c.kelas, hari: c.hari }, e.currentTarget) }),
           ]),
         ]);
       }
 
-      function noneCard(g, c) {
+      function noneCard(s, g, c) {
         return el("article", { class: "card card--none grain", "aria-label": g.name + " kelas " + c.kelas + ": tidak ada tugas" }, [
           el("div", { class: "card__head" }, [
             el("h6", { class: "card__title", text: "Kelas " + c.kelas }),
           ]),
           el("span", { class: "stamp", text: "TIDAK ADA TUGAS" }),
-          el("div", { class: "card__foot" }, [el("span", { text: "dilaporkan " + c.reportedBy + " · " + ago(c.reportedAt) })]),
+          el("div", { class: "card__foot" }, [
+            el("span", { text: "dilaporkan " + c.reportedBy + " · " + ago(c.reportedAt) }),
+            el("button", { class: "link-btn", type: "button", text: "Edit", "data-slot": slotId(s.semester, g.name, c.kelas), "aria-label": "Edit laporan " + g.name + " kelas " + c.kelas,
+              onclick: (e) => openNote({ week: state.week, semester: s.semester, matkul: g.name, kelas: c.kelas, hari: c.hari }, e.currentTarget) }),
+          ]),
         ]);
       }
+      const slotId = (semester, matkul, kelas) => [semester, matkul, kelas].join("|");
 
-      function sticky(iso, past) {
+      /** Sticky = tanggal tugas diberikan (hari kuliah kelas di minggu itu). */
+      function sticky(iso) {
         const d = parseIso(iso);
-        return el("div", { class: "sticky" + (past ? " is-past" : ""), title: "Deadline " + longDate(iso) + (past ? " (sudah lewat)" : "") }, [
+        return el("div", { class: "sticky", title: "Diberikan " + longDate(iso) }, [
           el("span", { class: "sticky__mon", text: MONTHS[d.getMonth()] }),
           el("span", { class: "sticky__day", text: String(d.getDate()) }),
-          el("span", { class: "sr-only", text: "Deadline " + longDate(iso) + (past ? ", sudah lewat" : "") }),
+          el("span", { class: "sr-only", text: "Diberikan " + longDate(iso) }),
         ]);
       }
 
@@ -903,14 +1049,15 @@
       function remembered() { try { return JSON.parse(localStorage.getItem(FORM_KEY)) || {}; } catch (_) { return {}; } }
       function remember(patch) { try { localStorage.setItem(FORM_KEY, JSON.stringify(Object.assign(remembered(), patch))); } catch (_) { /* abaikan */ } }
 
-      const newTask = () => ({ key: ++taskSeq, id: "", deskripsi: "", deadline: defaultDeadline(), deadlineTouched: false, touched: {} });
+      const newTask = () => ({ key: ++taskSeq, id: "", deskripsi: "", touched: {} });
       const weekInfo = (w) => F.options.weeks.find((x) => x.week === w);
       const slotReady = () => !!(F.semester && F.matkul && F.hari && F.kelas);
       const currentSlot = () => F.options.matkul.find((m) => m.semester === F.semester && m.kelas === F.kelas && m.matkul === F.matkul);
       const activeExisting = () => (F.existing || []).filter((t) => t.status === "ada");
-      function defaultDeadline() {
+      /** Tanggal tugas = hari kuliah kelas di minggu terpilih (minggu WRY Sabtu–Jumat → Senin = start + 2). Diisi otomatis server. */
+      function classDate() {
         const s = F.options && currentSlot(), wi = F.options && weekInfo(F.week);
-        return s && wi ? addDays(wi.end, 3 + DAY_ORDER.indexOf(s.hari)) : "";
+        return s && wi ? addDays(wi.start, 2 + DAY_ORDER.indexOf(s.hari)) : "";
       }
 
       async function openForm(prefill) {
@@ -960,7 +1107,7 @@
         });
         sel.value = String(F.week);
         const wi = weekInfo(F.week);
-        $("fWeekHint").textContent = "Deadline default jatuh di " + shortDate(addDays(wi.end, 3)) + " – " + shortDate(addDays(wi.end, 7)) + ", sesuai hari kuliah kelas.";
+        $("fWeekHint").textContent = "Tanggal tugas otomatis mengikuti hari kuliah kelas di minggu ini (" + shortDate(addDays(wi.start, 2)) + " – " + shortDate(addDays(wi.start, 6)) + ").";
       }
 
       function radioChips(host, name, values, current, label, onPick) {
@@ -1022,7 +1169,6 @@
       /** Slot (minggu/semester/kelas/matkul) berubah: cek tugas yang sudah ada, simpan teks yang belum tersimpan. */
       async function onSlotChange() {
         F.tasks = F.tasks.filter((t) => !t.id);
-        F.tasks.forEach((t) => { if (!t.deadlineTouched) t.deadline = defaultDeadline(); });
         F.existing = []; F.choice = null;
         renderExisting(); renderReport();
         if (!slotReady()) return;
@@ -1064,7 +1210,7 @@
         if (ada.length) {
           host.append(el("div", { class: "callout", role: "status" }, [
             el("h3", { text: slotName + " sudah punya " + ada.length + " tugas di minggu " + F.week }),
-            el("ul", null, ada.map((t) => el("li", { text: t.deskripsi + " — deadline " + shortDate(t.deadline) + " · oleh " + t.pengisi }))),
+            el("ul", null, ada.map((t) => el("li", { text: t.deskripsi + " · oleh " + t.pengisi }))),
             el("p", { text: "Mau mengubah tugas itu, atau menambah tugas baru untuk kelas ini?" }),
             el("div", { class: "callout__actions" }, [
               el("button", { class: "link-btn", type: "button", text: "Edit tugas ini", "aria-pressed": String(F.choice === "edit"), onclick: () => choose("edit") }),
@@ -1083,7 +1229,7 @@
         F.choice = choice;
         const drafts = F.tasks.filter((t) => !t.id);
         F.tasks = choice === "edit"
-          ? activeExisting().map((t) => ({ key: ++taskSeq, id: t.id, deskripsi: t.deskripsi, deadline: t.deadline, deadlineTouched: true, touched: {} }))
+          ? activeExisting().map((t) => ({ key: ++taskSeq, id: t.id, deskripsi: t.deskripsi, touched: {} }))
           : (drafts.length ? drafts : [newTask()]);
         F.mode = "ada";
         renderExisting(); renderReport();
@@ -1109,9 +1255,10 @@
       function renderTasks() {
         const list = $("taskList");
         list.textContent = "";
-        const slot = currentSlot();
+        const slot = currentSlot(), date = classDate();
+        $("taskDate").textContent = slot && date ? "Tanggal tugas: " + shortDate(date) + " (hari kuliah " + slot.hari + ", minggu " + F.week + "), terisi otomatis." : "";
         F.tasks.forEach((t, i) => {
-          const descId = "desc-" + t.key, dateId = "date-" + t.key;
+          const descId = "desc-" + t.key;
           const desc = el("textarea", { class: "input", id: descId, rows: "3", maxlength: String(MAX_DESC), "aria-describedby": "c-" + t.key + " e-" + descId });
           desc.value = t.deskripsi;
           const counter = el("span", { class: "counter", id: "c-" + t.key, "aria-live": "off", text: t.deskripsi.length + "/" + MAX_DESC });
@@ -1119,21 +1266,9 @@
           desc.addEventListener("input", () => {
             t.deskripsi = desc.value;
             counter.textContent = desc.value.length + "/" + MAX_DESC;
-            if (descErr.textContent && !taskError(t, "deskripsi")) setFieldError(desc, descErr, "");
+            if (descErr.textContent && !taskError(t)) setFieldError(desc, descErr, "");
           });
-          desc.addEventListener("blur", () => { t.touched.deskripsi = true; setFieldError(desc, descErr, taskError(t, "deskripsi")); });
-
-          const date = el("input", { class: "input", id: dateId, type: "date", "aria-describedby": "h-" + dateId + " e-" + dateId });
-          date.value = t.deadline;
-          const dateErr = el("p", { class: "field__error", id: "e-" + dateId });
-          const def = defaultDeadline();
-          const dateHint = el("p", { class: "field__hint", id: "h-" + dateId,
-            text: slot && def ? "Default: " + shortDate(def) + " (hari kuliah " + slot.hari + ")." : "" });
-          date.addEventListener("input", () => {
-            t.deadline = date.value; t.deadlineTouched = true;
-            if (dateErr.textContent && !taskError(t, "deadline")) setFieldError(date, dateErr, "");
-          });
-          date.addEventListener("blur", () => { t.touched.deadline = true; setFieldError(date, dateErr, taskError(t, "deadline")); });
+          desc.addEventListener("blur", () => { t.touched.deskripsi = true; setFieldError(desc, descErr, taskError(t)); });
 
           let action = null;
           if (t.id) action = el("button", { class: "icon-btn", type: "button", "aria-label": "Hapus tugas " + (i + 1),
@@ -1149,20 +1284,16 @@
               action,
             ]),
             el("div", { class: "field" }, [el("label", { class: "field__label", for: descId, text: "Deskripsi tugas" }), desc, counter, descErr]),
-            el("div", { class: "field" }, [el("label", { class: "field__label", for: dateId, text: "Deadline" }), date, dateHint, dateErr]),
           ]));
         });
         $("addTask").hidden = F.tasks.length >= MAX_TASKS;
       }
 
-      function taskError(t, field) {
-        if (field === "deskripsi") {
-          const v = t.deskripsi.trim();
-          if (!v) return "Tulis deskripsi tugasnya.";
-          if (v.length > MAX_DESC) return "Maksimal " + MAX_DESC + " karakter.";
-          return "";
-        }
-        return /^\d{4}-\d{2}-\d{2}$/.test(t.deadline) ? "" : "Pilih tanggal deadline.";
+      function taskError(t) {
+        const v = t.deskripsi.trim();
+        if (!v) return "Tulis deskripsi tugasnya.";
+        if (v.length > MAX_DESC) return "Maksimal " + MAX_DESC + " karakter.";
+        return "";
       }
       function setFieldError(input, errNode, message) {
         errNode.textContent = message;
@@ -1188,19 +1319,16 @@
         let firstInvalid = null;
         if (F.mode === "ada") {
           F.tasks.forEach((t) => {
-            ["deskripsi", "deadline"].forEach((field) => {
-              const id = (field === "deskripsi" ? "desc-" : "date-") + t.key;
-              const msg = taskError(t, field);
-              setFieldError($(id), $("e-" + id), msg);
-              if (msg && !firstInvalid) firstInvalid = $(id);
-            });
+            const id = "desc-" + t.key, msg = taskError(t);
+            setFieldError($(id), $("e-" + id), msg);
+            if (msg && !firstInvalid) firstInvalid = $(id);
           });
         }
         if (firstInvalid) { firstInvalid.focus(); return; }
 
         const payload = {
           week: F.week, semester: F.semester, matkul: F.matkul, kelas: F.kelas, mode: F.mode, pengisi: $("fName").value.trim() || DEFAULT_NAME,
-          tasks: F.mode === "ada" ? F.tasks.map((t) => ({ id: t.id || undefined, deskripsi: t.deskripsi.trim(), deadline: t.deadline })) : [],
+          tasks: F.mode === "ada" ? F.tasks.map((t) => ({ id: t.id || undefined, deskripsi: t.deskripsi.trim() })) : [],
         };
         const btn = $("submitBtn"), label = btn.querySelector(".btn-primary__label"), original = label.textContent;
         F.saving = true;
@@ -1236,12 +1364,8 @@
       }
 
       async function removeSaved(t, btn) {
-        const dlg = $("confirmDlg");
-        $("confirmText").textContent = "“" + (t.deskripsi.trim() || "Tugas tanpa deskripsi") + "” akan dihapus dari " + F.matkul + " - " + F.kelas + ", minggu " + F.week + ". Admin WRY masih bisa memulihkannya.";
-        dlg.returnValue = "";
-        dlg.showModal();
-        const answer = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
-        if (answer !== "ok") { btn.focus(); return; }
+        const ok = await askConfirm("Hapus tugas ini?", "“" + (t.deskripsi.trim() || "Tugas tanpa deskripsi") + "” akan dihapus dari " + F.matkul + " - " + F.kelas + ", minggu " + F.week + ". Admin WRY masih bisa memulihkannya.", "Hapus tugas");
+        if (!ok) { btn.focus(); return; }
         btn.disabled = true;
         btn.setAttribute("aria-busy", "true");
         btn.lastChild.textContent = "Menghapus…";
@@ -1288,6 +1412,346 @@
       $("uploadForm").addEventListener("submit", submitForm);
       $("doneBoard").addEventListener("click", () => go({ week: F.week, view: "board" }));
       $("doneAgain").addEventListener("click", () => { $("uploadDone").hidden = true; openForm({ week: F.week }); $("uploadTitle").focus(); });
+
+      // ───── Konfirmasi & toast ─────
+      function askConfirm(title, text, okLabel) {
+        const dlg = $("confirmDlg");
+        $("confirmTitle").textContent = title;
+        $("confirmText").textContent = text;
+        $("confirmOk").textContent = okLabel;
+        dlg.returnValue = "";
+        dlg.showModal();
+        return new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue === "ok"), { once: true }));
+      }
+      let toastTimer;
+      function toast(message) {
+        const t = $("toast");
+        t.textContent = message;
+        t.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+      }
+
+      // ───── Popup sticky note (isi cepat dari papan tugas) ─────
+      const N = { slot: null, trigger: null, mode: "ada", existing: [], tasks: [], dirty: false, saving: false, seq: 0 };
+      let noteSeq = 0;
+      const noteName = () => { try { return (JSON.parse(localStorage.getItem(FORM_KEY)) || {}).name || ""; } catch (_) { return ""; } };
+      const noteActive = () => N.existing.filter((t) => t.status === "ada");
+      /** Tanggal tugas = hari kuliah kelas di minggu papan (diisi otomatis server). */
+      function noteClassDate(slot) {
+        const d = state.data;
+        return d && d.week === slot.week ? addDays(d.start, 2 + DAY_ORDER.indexOf(slot.hari)) : "";
+      }
+      const newNoteTask = () => ({ key: ++noteSeq, id: "", deskripsi: "", touched: false });
+
+      async function openNote(slot, trigger) {
+        if (state.data && state.data.accepting === false) { toast("Form unggah sedang ditutup admin WRY."); return; }
+        const dlg = $("noteDlg");
+        const reopening = dlg.open; // "Coba lagi" setelah gagal memuat: dialog sudah terbuka.
+        const seq = ++N.seq;
+        // Kartu sumber (Edit) terangkat dari papan; slot kosong = kertas baru dari bawah layar.
+        const card = trigger && trigger.closest ? trigger.closest(".card") : null;
+        Object.assign(N, { slot: slot, trigger: trigger, card: reopening ? N.card : card, mode: "ada", existing: [], tasks: [], dirty: false, saving: false });
+        const date = noteClassDate(slot);
+        $("noteMeta").textContent = slot.matkul + " · " + (date ? shortDate(date) : slot.hari) + " · Minggu " + slot.week;
+        $("noteTitle").textContent = "Kelas " + slot.kelas;
+        $("noteAlert").textContent = "";
+        $("noteBody").hidden = true;
+        $("noteLoading").hidden = true;
+        const name = noteName();
+        $("noteName").value = name;
+        $("noteNameField").hidden = true;
+        renderNameToggle();
+        if (!reopening) {
+          dlg.showModal();
+          $("noteTitle").focus({ preventScroll: true });
+          paperIn(N.card);
+        }
+        const slow = setTimeout(() => { if (seq === N.seq) $("noteLoading").hidden = false; }, 200);
+        let rows;
+        try {
+          rows = await call("checkExisting", slot.week, slot.semester, slot.matkul, slot.kelas);
+        } catch (err) {
+          if (seq !== N.seq) return;
+          noteAlert("error", "Tugas kelas ini belum bisa dimuat", "Periksa koneksi lalu coba lagi. (" + err.message + ")", () => openNote(slot, trigger));
+          return;
+        } finally {
+          clearTimeout(slow);
+          if (seq === N.seq) $("noteLoading").hidden = true;
+        }
+        if (seq !== N.seq || !$("noteDlg").open) return;
+        N.existing = rows;
+        const ada = noteActive();
+        N.tasks = ada.length
+          ? ada.map((t) => ({ key: ++noteSeq, id: t.id, deskripsi: t.deskripsi, touched: false }))
+          : [newNoteTask()];
+        N.mode = !ada.length && rows.some((t) => t.status === "tidak-ada") ? "tidak-ada" : "ada";
+        $("noteBody").hidden = false;
+        renderNote();
+        const first = N.mode === "ada" ? $("noteTasks").querySelector("textarea") : document.querySelector('input[name="noteMode"]:checked');
+        if (first) first.focus();
+      }
+
+      function renderNameToggle() {
+        const name = $("noteName").value.trim();
+        const btn = $("noteNameToggle");
+        const open = !$("noteNameField").hidden;
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? "Sembunyikan nama pengisi" : name ? "Pengisi: " + name + " (ubah)" : "Beri nama pengisi";
+      }
+
+      function noteAlert(kind, title, text, retry) {
+        const host = $("noteAlert");
+        host.textContent = "";
+        if (!title) return null;
+        const box = el("div", { class: "callout callout--" + kind, role: kind === "error" ? "alert" : "status", tabindex: "-1" }, [
+          el("h3", { text: title }), el("p", { text: text }),
+          retry ? el("div", { class: "callout__actions" }, [el("button", { class: "link-btn", type: "button", text: "Coba lagi", onclick: retry })]) : null,
+        ]);
+        host.append(box);
+        return box;
+      }
+
+      function renderNote() {
+        const ada = noteActive();
+        if (ada.length && N.mode === "tidak-ada") N.mode = "ada";
+        document.querySelectorAll('input[name="noteMode"]').forEach((r) => { r.checked = r.value === N.mode; });
+        $("noteModeNone").disabled = ada.length > 0;
+        $("noteModeHint").textContent = ada.length ? "Kelas ini sudah punya tugas. Hapus tugasnya dulu kalau memang tidak ada tugas." : "";
+        $("noteTaskArea").hidden = N.mode !== "ada";
+        $("noteSave").textContent = N.mode === "tidak-ada" ? "Laporkan tidak ada tugas" : "Simpan";
+        renderNoteTasks();
+      }
+
+      function renderNoteTasks() {
+        const list = $("noteTasks");
+        list.textContent = "";
+        N.tasks.forEach((t, i) => {
+          const descId = "nd-" + t.key;
+          const desc = el("textarea", { class: "note__input", id: descId, rows: "3", maxlength: "160", "aria-describedby": "nc-" + t.key + " ne-" + descId });
+          desc.value = t.deskripsi;
+          const counter = el("span", { class: "note__counter", id: "nc-" + t.key, text: t.deskripsi.length + "/160" });
+          const descErr = el("p", { class: "note__error", id: "ne-" + descId });
+          desc.addEventListener("input", () => {
+            t.deskripsi = desc.value; N.dirty = true;
+            counter.textContent = desc.value.length + "/160";
+            if (descErr.textContent && desc.value.trim()) setNoteError(desc, descErr, "");
+          });
+          desc.addEventListener("blur", () => { if (t.touched || desc.value) setNoteError(desc, descErr, desc.value.trim() ? "" : "Tulis deskripsi tugasnya."); t.touched = true; });
+          let action = null;
+          if (t.id) action = el("button", { class: "note__link note__link--danger", type: "button", text: "Hapus", "aria-label": "Hapus tugas " + (i + 1), onclick: (e) => noteRemove(t, e.currentTarget) });
+          else if (N.tasks.length > 1) action = el("button", { class: "note__link", type: "button", text: "Buang", "aria-label": "Buang tugas " + (i + 1),
+            onclick: () => { N.tasks = N.tasks.filter((x) => x !== t); renderNoteTasks(); $("noteAdd").focus(); } });
+          list.append(el("li", null, [
+            el("div", { class: "note-task__head" }, [
+              el("span", null, [el("span", { class: "note-task__title", text: "Tugas " + (i + 1) }), t.id ? el("span", { class: "note-task__badge", text: "Tersimpan" }) : null]),
+              action,
+            ]),
+            el("div", { class: "note__field" }, [el("label", { for: descId, text: "Deskripsi tugas" }), desc, counter, descErr]),
+          ]));
+        });
+        $("noteAdd").hidden = N.tasks.length >= 10;
+      }
+      function setNoteError(input, node, message) {
+        node.textContent = message;
+        if (message) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
+      }
+
+      async function noteRemove(t, btn) {
+        const ok = await askConfirm("Hapus tugas ini?", "“" + (t.deskripsi.trim() || "Tugas tanpa deskripsi") + "” akan dihapus dari " + N.slot.matkul + " - " + N.slot.kelas + ", minggu " + N.slot.week + ". Admin WRY masih bisa memulihkannya.", "Hapus tugas");
+        if (!ok) { btn.focus(); return; }
+        btn.disabled = true;
+        btn.textContent = "Menghapus…";
+        try {
+          await call("deleteTask", t.id, $("noteName").value.trim() || DEFAULT_NAME);
+          N.existing = N.existing.filter((x) => x.id !== t.id);
+          N.tasks = N.tasks.filter((x) => x !== t);
+          if (!N.tasks.length) N.tasks = [newNoteTask()];
+          renderNote();
+          noteAlert("ok", "Tugas dihapus", "“" + t.deskripsi.trim() + "” sudah dihapus dari papan.");
+          refreshBoard();
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = "Hapus";
+          noteAlert("error", "Tugas belum terhapus", err.message).focus();
+        }
+      }
+
+      async function saveNote(e) {
+        e.preventDefault();
+        if (N.saving || $("noteBody").hidden) return;
+        let firstInvalid = null;
+        if (N.mode === "ada") N.tasks.forEach((t) => {
+          const desc = $("nd-" + t.key);
+          const dMsg = t.deskripsi.trim() ? "" : "Tulis deskripsi tugasnya.";
+          setNoteError(desc, $("ne-nd-" + t.key), dMsg);
+          if (!firstInvalid && dMsg) firstInvalid = desc;
+        });
+        if (firstInvalid) { firstInvalid.focus(); return; }
+        const name = $("noteName").value.trim();
+        const slot = N.slot;
+        const payload = {
+          week: slot.week, semester: slot.semester, matkul: slot.matkul, kelas: slot.kelas, mode: N.mode, pengisi: name || DEFAULT_NAME,
+          tasks: N.mode === "ada" ? N.tasks.map((t) => ({ id: t.id || undefined, deskripsi: t.deskripsi.trim() })) : [],
+        };
+        const btn = $("noteSave"), label = btn.textContent;
+        N.saving = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.textContent = "Menyimpan…";
+        try {
+          await call("saveTasks", payload);
+          if (name) { try { const m = JSON.parse(localStorage.getItem(FORM_KEY)) || {}; m.name = name; localStorage.setItem(FORM_KEY, JSON.stringify(m)); } catch (_) { /* abaikan */ } }
+          N.dirty = false;
+          btn.textContent = "Menempel…";
+          await refreshBoard();
+          const target = cardOf(slotId(slot.semester, slot.matkul, slot.kelas));
+          await paperOut(target, true);
+          toast(slot.matkul + " - " + slot.kelas + (payload.mode === "tidak-ada" ? ": dilaporkan tidak ada tugas." : ": " + payload.tasks.length + " tugas tersimpan."));
+        } catch (err) {
+          noteAlert("error", "Belum tersimpan", err.message + " Isianmu masih ada, silakan simpan lagi.").focus();
+        } finally {
+          N.saving = false;
+          btn.removeAttribute("aria-busy");
+          btn.textContent = label;
+        }
+      }
+
+      /** Muat ulang papan minggu ini tanpa skeleton (posisi scroll tetap). */
+      async function refreshBoard() {
+        cache.clear();
+        try {
+          const d = await call("getBoard", state.week);
+          state.data = d;
+          cache.set(d.week, d);
+          renderHero(d);
+          renderBoard(d);
+        } catch (_) {
+          state.data = null; // Papan dimuat ulang saat dibuka berikutnya.
+        }
+      }
+      const cardOf = (id) => {
+        const btn = document.querySelector('.card [data-slot="' + CSS.escape(id) + '"]');
+        return btn ? btn.closest(".card") : null;
+      };
+
+      // ───── Gerak kertas ─────
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const MOTION_MS = 320;
+      const EASE = "cubic-bezier(.2, .8, .2, 1)";
+      const box = (r) => ({ left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+
+      /** Kertas kosong (di dalam dialog = top layer) yang dianimasikan posisi & ukurannya; isinya tidak ikut melar. */
+      function flyShell(from, to, lifted) {
+        const shell = el("div", { class: "paper-shell grain", "aria-hidden": "true" });
+        Object.assign(shell.style, box(from));
+        $("noteDlg").append(shell);
+        const shadowLow = "0 2px 6px rgba(0,0,0,.3)", shadowHigh = "0 22px 44px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.25)";
+        const anim = shell.animate([
+          Object.assign(box(from), { boxShadow: lifted ? shadowLow : shadowHigh }),
+          Object.assign(box(to), { boxShadow: lifted ? shadowHigh : shadowLow }),
+        ], { duration: MOTION_MS, easing: EASE, fill: "forwards" });
+        return anim.finished.then(() => shell, () => shell);
+      }
+
+      /** Buka: kartu terangkat & membesar ke tengah, atau kertas baru naik dari bawah layar. */
+      async function paperIn(card) {
+        const dlg = $("noteDlg"), note = $("noteForm");
+        if (reduceMotion.matches) return;
+        dlg.classList.add("is-entering");
+        requestAnimationFrame(() => dlg.classList.remove("is-entering")); // Backdrop memudar masuk.
+        if (card) {
+          const from = card.getBoundingClientRect();
+          card.classList.add("is-lifted");
+          dlg.classList.add("is-shell-only");
+          const shell = await flyShell(from, note.getBoundingClientRect(), true);
+          dlg.classList.remove("is-shell-only");
+          shell.remove();
+          note.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 140, easing: "ease-out" });
+        } else {
+          // Seluruh dialog (kertas + selotip) naik dari bawah layar; backdrop tidak ikut bergerak.
+          dlg.animate([
+            { transform: "translateY(" + (innerHeight * 0.9) + "px) rotate(4deg)" },
+            { transform: "translateY(-6px) rotate(-.6deg)", offset: 0.8 },
+            { transform: "none" },
+          ], { duration: MOTION_MS + 120, easing: EASE });
+        }
+      }
+
+      /** Tutup: kertas kembali ke kartu (dan ditempel selotip bila tersimpan), atau turun ke bawah layar. */
+      async function paperOut(target, saved) {
+        const dlg = $("noteDlg"), note = $("noteForm");
+        const finish = () => {
+          dlg.classList.remove("is-shell-only", "is-leaving");
+          dlg.querySelectorAll(".paper-shell").forEach((x) => x.remove());
+          if (dlg.open) dlg.close();
+          document.querySelectorAll(".card.is-lifted").forEach((c) => c.classList.remove("is-lifted"));
+          if (target) {
+            if (saved) {
+              target.classList.remove("is-taped");
+              void target.offsetWidth; // Mulai ulang animasi selotip.
+              target.classList.add("is-taped");
+              setTimeout(() => target.classList.remove("is-taped"), 700); // Setelah animasi selotip (520 ms) & tekan (420 ms).
+            }
+            const focusEl = target.querySelector("button.link-btn");
+            if (focusEl) focusEl.focus({ preventScroll: true });
+          } else if (N.trigger && document.contains(N.trigger)) {
+            N.trigger.focus({ preventScroll: true });
+          }
+        };
+        if (reduceMotion.matches) { finish(); return; }
+        dlg.classList.add("is-leaving");
+        if (target) {
+          target.classList.add("is-lifted");
+          const r = target.getBoundingClientRect();
+          if (r.top < 60 || r.bottom > innerHeight - 20) {
+            target.scrollIntoView({ block: "center", behavior: "instant" }); // Papan di belakang dialog ikut bergeser.
+          }
+          const from = note.getBoundingClientRect();
+          dlg.classList.add("is-shell-only");
+          await flyShell(from, target.getBoundingClientRect(), false);
+        } else {
+          await dlg.animate([
+            { transform: "none" },
+            { transform: "translateY(" + (innerHeight * 0.9) + "px) rotate(4deg)" },
+          ], { duration: MOTION_MS, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" }).finished.catch(() => {});
+        }
+        finish();
+        dlg.getAnimations().forEach((a) => a.cancel());
+        note.getAnimations().forEach((a) => a.cancel());
+      }
+
+      async function closeNote() {
+        if (N.saving) return;
+        if (N.dirty && !(await askConfirm("Tutup tanpa menyimpan?", "Isian di kertas ini akan hilang.", "Tutup"))) return;
+        N.dirty = false;
+        N.seq++;
+        await paperOut(N.card && document.contains(N.card) ? N.card : null, false);
+      }
+      $("noteForm").addEventListener("submit", saveNote);
+      $("noteCancel").addEventListener("click", closeNote);
+      $("noteClose").addEventListener("click", closeNote);
+      $("noteDlg").addEventListener("cancel", (e) => { e.preventDefault(); closeNote(); }); // Esc
+      $("noteDlg").addEventListener("close", () => {
+        N.seq++;
+        document.querySelectorAll(".card.is-lifted").forEach((c) => c.classList.remove("is-lifted"));
+      });
+      document.querySelectorAll('input[name="noteMode"]').forEach((r) => r.addEventListener("change", () => {
+        N.mode = r.value; N.dirty = true;
+        if (N.mode === "ada" && !N.tasks.length) N.tasks = [newNoteTask()];
+        renderNote();
+      }));
+      $("noteAdd").addEventListener("click", () => {
+        N.tasks.push(newNoteTask());
+        renderNoteTasks();
+        $("nd-" + N.tasks[N.tasks.length - 1].key).focus();
+      });
+      $("noteNameToggle").addEventListener("click", () => {
+        const field = $("noteNameField");
+        field.hidden = !field.hidden;
+        renderNameToggle();
+        if (!field.hidden) $("noteName").focus();
+      });
+      $("noteName").addEventListener("input", () => { N.dirty = true; });
 
       // ───── Routing ─────
       function showView(view) {

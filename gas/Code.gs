@@ -10,10 +10,8 @@ const CONFIG = Object.freeze({
   DAYS: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"],
   MAX_TASKS_PER_SUBMIT: 10,
   CACHE_SECONDS: 300,
-  OTP_MINUTES: 10,
-  OTP_MAX_ATTEMPTS: 5,
-  OTP_RESEND_SECONDS: 60,
-  OTP_MAX_PER_HOUR: 5,
+  LOGIN_MAX_FAILS: 5,
+  LOGIN_LOCK_MINUTES: 15,
   SESSION_DAYS: 7,
   DEFAULT_NAME: "Kontributor Kelas",
 });
@@ -21,9 +19,10 @@ const CONFIG = Object.freeze({
 const SHEETS = Object.freeze({
   config: { name: "Config", header: ["KEY", "VALUE", "KETERANGAN"] },
   matkul: { name: "Matkul", header: ["Semester", "Hari", "Matkul", "Kelas", "Aktif"] },
-  tugas: { name: "Tugas", header: ["ID", "Minggu", "Semester", "Matkul", "Kelas", "Status", "Deskripsi", "Deadline", "Pengisi", "Dibuat", "Diubah"] },
+  tugas: { name: "Tugas", header: ["ID", "Minggu", "Semester", "Matkul", "Kelas", "Status", "Deskripsi", "Tanggal", "Pengisi", "Dibuat", "Diubah"] },
   riwayat: { name: "Riwayat", header: ["Waktu", "ID Tugas", "Aksi", "Pengisi", "Sebelum", "Sesudah"] },
   export: { name: "Export", header: ["Minggu", "Waktu", "Oleh", "Jumlah slide", "Folder"] },
+  akun: { name: "Akun", header: ["Email", "Password", "Peran", "Aktif", "Catatan"] },
 });
 
 /** Status baris Tugas. "tidak-ada" = kelas melapor tidak ada tugas untuk matkul itu. */
@@ -156,8 +155,7 @@ function setupSheet() {
       ["ACCEPT_SUBMISSIONS", "TRUE", "TRUE = form menerima tugas. FALSE = papan tetap tampil, form ditutup."],
       ["ASSET_BASE", "https://cdn.jsdelivr.net/gh/asdipura/weremindyou@main/assets", "URL folder aset (tanpa / di akhir)."],
       ["APP_TITLE", CONFIG.TITLE, "Judul tab browser."],
-      ["ADMIN_EMAILS", "admin.wry@example.com | ketua.wry@example.com", "Admin WRY: login backoffice (OTP) dengan akses penuh. Pisahkan dengan |."],
-      ["DESIGN_EMAILS", "design.wry@example.com", "Tim design: login backoffice untuk lihat status & export, plus penerima email Jumat 23.59. Pisahkan dengan |."],
+      ["DESIGN_EMAILS", "design.wry@example.com", "Penerima email ringkasan Jumat 23.59. Pisahkan dengan |. Akun login backoffice diatur di tab Akun."],
     ];
     const existing = new Set(config.getDataRange().getDisplayValues().slice(1).map(function (r) { return String(r[0]).trim(); }));
     defaults.forEach(function (row) { if (!existing.has(row[0])) config.appendRow(row); });
@@ -173,9 +171,14 @@ function setupSheet() {
     tugas.getRange("A:K").setNumberFormat("@"); // Simpan tanggal sebagai teks ISO, bebas zona waktu.
     sheet_(book, SHEETS.riwayat).getRange("A:F").setNumberFormat("@");
     sheet_(book, SHEETS.export).getRange("A:E").setNumberFormat("@");
+    const created = setupAccounts_(book);
     bumpVersion_();
     SpreadsheetApp.flush();
-    const result = { spreadsheet: book.getUrl(), next: "Cek tab Config, lalu Deploy → New deployment → Web app (Execute as: Me, Access: Anyone)." };
+    const result = {
+      spreadsheet: book.getUrl(),
+      akunContoh: created,
+      next: "Cek tab Config & Akun, lalu Deploy → New deployment → Web app (Execute as: Me, Access: Anyone).",
+    };
     console.log(JSON.stringify(result, null, 2));
     return result;
   });
@@ -208,9 +211,10 @@ function getBoard(week) {
     let group = sem.matkul.find(function (g) { return g.name === m.matkul; });
     if (!group) sem.matkul.push(group = { name: m.matkul, classes: [] });
     const items = bySlot[slotKey_(m.semester, m.matkul, m.kelas)] || [];
+    const tanggal = classDate_(w, m.hari, cfg);
     const tasks = items.filter(function (t) { return t.status === STATUS.ada; })
-      .sort(function (a, b) { return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0; })
-      .map(publicTask_);
+      .sort(function (a, b) { return a.dibuat < b.dibuat ? -1 : a.dibuat > b.dibuat ? 1 : 0; })
+      .map(function (t) { return Object.assign(publicTask_(t), { tanggal: tanggal }); });
     const none = items.find(function (t) { return t.status === STATUS.tidakAda; });
     group.classes.push({
       kelas: m.kelas,
@@ -255,12 +259,6 @@ function getFormOptions() {
   };
 }
 
-/** Deadline default: hari kuliah kelas itu, Senin–Jumat setelah minggu WRY ditutup. */
-function getDefaultDeadline(week, hari) {
-  const cfg = loadConfig_();
-  return defaultDeadline_(clampWeek_(week, cfg), hari, cfg);
-}
-
 /** Tugas aktif untuk satu slot, dipakai peringatan duplikat di form. */
 function checkExisting(week, semester, matkul, kelas) {
   const cfg = loadConfig_();
@@ -273,7 +271,8 @@ function checkExisting(week, semester, matkul, kelas) {
 
 /**
  * Simpan laporan satu slot (matkul + kelas + minggu).
- * payload: {week, semester, matkul, kelas, pengisi, mode: "ada"|"tidak-ada", tasks: [{id?, deskripsi, deadline}]}
+ * payload: {week, semester, matkul, kelas, pengisi, mode: "ada"|"tidak-ada", tasks: [{id?, deskripsi}]}
+ * Tanggal tugas tidak diinput: selalu hari kuliah kelas itu di minggu terpilih.
  */
 function saveTasks(payload) {
   if (!payload || typeof payload !== "object") throw new Error("Data tidak valid.");
@@ -290,9 +289,9 @@ function saveTasks(payload) {
     return {
       id: t.id ? String(t.id) : "",
       deskripsi: field_(t.deskripsi, "Deskripsi tugas", 160, true),
-      deadline: isoDate_(t.deadline, "Deadline"),
     };
   });
+  const tanggal = classDate_(week, slot.hari, cfg);
 
   return locked_(function () {
     const sheet = sheetByName_(SHEETS.tugas.name);
@@ -317,10 +316,10 @@ function saveTasks(payload) {
         if (t.id) {
           const old = all.find(function (x) { return x.id === t.id; });
           if (!old || old.status === STATUS.dihapus) throw new Error("Tugas yang diedit tidak ditemukan. Muat ulang halaman.");
-          updateRow_(sheet, old, { minggu: week, semester: slot.semester, matkul: slot.matkul, kelas: slot.kelas, deskripsi: t.deskripsi, deadline: t.deadline, pengisi: pengisi, diubah: now }, "edit");
+          updateRow_(sheet, old, { minggu: week, semester: slot.semester, matkul: slot.matkul, kelas: slot.kelas, deskripsi: t.deskripsi, tanggal: tanggal, pengisi: pengisi, diubah: now }, "edit");
           saved.push(old.id);
         } else {
-          saved.push(appendTask_(sheet, week, slot, STATUS.ada, t.deskripsi, t.deadline, pengisi, now));
+          saved.push(appendTask_(sheet, week, slot, STATUS.ada, t.deskripsi, tanggal, pengisi, now));
         }
       });
     }
@@ -342,65 +341,33 @@ function deleteTask(id, pengisi) {
   });
 }
 
-// ───────────────────────── Backoffice: login OTP ─────────────────────────
-// Peran: "admin" (ADMIN_EMAILS) akses penuh; "design" (DESIGN_EMAILS) lihat status & export.
-// OTP & sesi hanya disimpan sebagai hash. Respons requestOtp sama untuk email terdaftar maupun tidak.
+// ───────────────────────── Backoffice: login (tab Akun) ─────────────────────────
+// Akun diatur di tab "Akun": Email · Password · Peran (admin/design) · Aktif.
+// "admin" akses penuh; "design" lihat status, data, & export. Sesi disimpan sebagai hash token
+// dan ikut gugur bila password diubah atau akun dinonaktifkan di Sheet.
 
-function requestOtp(email) {
-  const addr = email_(email);
-  const cfg = loadConfig_();
-  const role = roleOf_(addr, cfg);
+function adminLogin(email, password) {
+  const addr = String(email || "").trim().toLowerCase();
+  const pass = String(password || "");
+  if (!addr || !pass) throw new Error("Isi email dan password.");
+  if (addr.length > 120 || pass.length > 200) throw new Error("Email atau password salah.");
   const cache = CacheService.getScriptCache();
-  const generic = { sent: true, message: "Kalau email ini terdaftar, kode masuk sudah dikirim. Cek kotak masuk & folder spam." };
-  if (cache.get("otp_wait_" + digest_(addr))) throw new Error("Tunggu 1 menit sebelum meminta kode baru.");
-  cache.put("otp_wait_" + digest_(addr), "1", CONFIG.OTP_RESEND_SECONDS);
-  if (!role) return generic;
-
-  const hourKey = "otp_hour_" + digest_(addr);
-  const sentThisHour = Number(cache.get(hourKey) || 0);
-  if (sentThisHour >= CONFIG.OTP_MAX_PER_HOUR) throw new Error("Terlalu banyak permintaan kode. Coba lagi dalam 1 jam.");
-  cache.put(hourKey, String(sentThisHour + 1), 3600);
-
-  const code = otpCode_();
-  cache.put("otp_" + digest_(addr), JSON.stringify({ hash: digest_(addr + ":" + code), attempts: 0 }), CONFIG.OTP_MINUTES * 60);
-  MailApp.sendEmail({
-    to: addr,
-    subject: "Kode masuk WRY Backoffice: " + code,
-    body: "Kode masuk backoffice We Remind You! kamu:\n\n    " + code + "\n\n" +
-      "Kode berlaku " + CONFIG.OTP_MINUTES + " menit. Abaikan email ini kalau kamu tidak meminta kode.\n\n— HIMA IDE ITS",
-    name: "WRY HIMA IDE ITS",
-  });
-  return generic;
-}
-
-function verifyOtp(email, code) {
-  const addr = email_(email);
-  const input = String(code || "").replace(/\s+/g, "");
-  if (!/^\d{6}$/.test(input)) throw new Error("Kode terdiri dari 6 angka.");
-  return locked_(function () {
-    const cache = CacheService.getScriptCache();
-    const key = "otp_" + digest_(addr);
-    const raw = cache.get(key);
-    if (!raw) throw new Error("Kode sudah kedaluwarsa atau belum diminta. Minta kode baru.");
-    const otp = JSON.parse(raw);
-    if (otp.attempts >= CONFIG.OTP_MAX_ATTEMPTS) {
-      cache.remove(key);
-      throw new Error("Terlalu banyak percobaan. Minta kode baru.");
-    }
-    if (otp.hash !== digest_(addr + ":" + input)) {
-      otp.attempts++;
-      cache.put(key, JSON.stringify(otp), CONFIG.OTP_MINUTES * 60);
-      throw new Error("Kode salah. Sisa " + (CONFIG.OTP_MAX_ATTEMPTS - otp.attempts) + " percobaan.");
-    }
-    cache.remove(key);
-    const role = roleOf_(addr, loadConfig_());
-    if (!role) throw new Error("Email ini tidak lagi terdaftar.");
-    pruneSessions_();
-    const token = Utilities.getUuid() + Utilities.getUuid();
-    const expires = Date.now() + CONFIG.SESSION_DAYS * 86400000;
-    PropertiesService.getScriptProperties().setProperty("ADM_" + digest_(token), JSON.stringify({ email: addr, expires: expires }));
-    return { token: token, email: addr, role: role, expires: expires };
-  });
+  const failKey = "login_fail_" + digest_(addr);
+  const fails = Number(cache.get(failKey) || 0);
+  if (fails >= CONFIG.LOGIN_MAX_FAILS) throw new Error("Terlalu banyak percobaan. Coba lagi " + CONFIG.LOGIN_LOCK_MINUTES + " menit lagi.");
+  const account = account_(addr);
+  if (!account || account.password !== pass) {
+    cache.put(failKey, String(fails + 1), CONFIG.LOGIN_LOCK_MINUTES * 60);
+    Utilities.sleep(400); // Perlambat tebakan beruntun.
+    throw new Error("Email atau password salah.");
+  }
+  cache.remove(failKey);
+  pruneSessions_();
+  const token = Utilities.getUuid() + Utilities.getUuid();
+  const expires = Date.now() + CONFIG.SESSION_DAYS * 86400000;
+  PropertiesService.getScriptProperties().setProperty("ADM_" + digest_(token),
+    JSON.stringify({ email: addr, fp: fingerprint_(account), expires: expires }));
+  return { token: token, email: addr, role: account.role, expires: expires };
 }
 
 /** Cek sesi tersimpan saat halaman dibuka. */
@@ -412,6 +379,53 @@ function adminSession(token) {
 function adminLogout(token) {
   if (typeof token === "string" && token) PropertiesService.getScriptProperties().deleteProperty("ADM_" + digest_(token));
   return { ok: true };
+}
+
+/** Buat tab Akun berisi 2 akun contoh berpassword acak (sekali saja, bila tab masih kosong). */
+function setupAccounts_(book) {
+  const sheet = sheet_(book, SHEETS.akun);
+  sheet.getRange("A:B").setNumberFormat("@"); // Password angka (mis. 0123) tetap teks.
+  const rules = SpreadsheetApp.newDataValidation().requireValueInList(["admin", "design"], true).setAllowInvalid(false).build();
+  sheet.getRange("C2:C200").setDataValidation(rules);
+  sheet.getRange("D2:D200").insertCheckboxes();
+  sheet.setColumnWidth(1, 260); sheet.setColumnWidth(2, 180); sheet.setColumnWidth(3, 110); sheet.setColumnWidth(5, 360);
+  if (sheet.getLastRow() >= 2) return [];
+  const pass = function () { return "wry-" + Utilities.getUuid().replace(/-/g, "").slice(0, 8); };
+  const rows = [
+    ["admin@wry.test", pass(), "admin", true, "Contoh admin WRY. Ganti email & password, atau tambah baris baru."],
+    ["design@wry.test", pass(), "design", true, "Contoh tim design (lihat status & export)."],
+  ];
+  sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  return rows.map(function (r) { return { email: r[0], password: r[1], peran: r[2] }; });
+}
+
+/** Akun aktif untuk email ini, atau null. Dibaca langsung dari Sheet supaya perubahan langsung berlaku. */
+function account_(email) {
+  const sheet = book_().getSheetByName(SHEETS.akun.name);
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (String(r[0]).trim().toLowerCase() !== email) continue;
+    const role = String(r[2]).trim().toLowerCase();
+    const active = r[3] === true || String(r[3]).toUpperCase() === "TRUE";
+    if (!active || (role !== "admin" && role !== "design")) return null;
+    return { email: email, password: String(r[1]), role: role };
+  }
+  return null;
+}
+function accounts_() {
+  const sheet = book_().getSheetByName(SHEETS.akun.name);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues()
+    .filter(function (r) { return String(r[0]).trim(); })
+    .map(function (r) {
+      return { email: String(r[0]).trim().toLowerCase(), role: String(r[2]).trim().toLowerCase(), active: r[3] === true || String(r[3]).toUpperCase() === "TRUE" };
+    });
+}
+/** Sidik akun: berubah bila password atau peran diubah → sesi lama gugur. */
+function fingerprint_(account) {
+  return digest_(account.email + "\n" + account.password + "\n" + account.role);
 }
 
 // ───────────────────────── Backoffice: data ─────────────────────────
@@ -454,9 +468,10 @@ function adminTasks(token, week) {
   const hari = {};
   readMatkul_(cfg).forEach(function (m) { hari[slotKey_(m.semester, m.matkul, m.kelas)] = m.hari; });
   return readTugas_().filter(function (t) { return t.minggu === w; }).map(function (t) {
+    const h = hari[slotKey_(t.semester, t.matkul, t.kelas)] || "";
     return {
-      id: t.id, semester: t.semester, matkul: t.matkul, kelas: t.kelas, hari: hari[slotKey_(t.semester, t.matkul, t.kelas)] || "",
-      status: t.status, deskripsi: t.deskripsi, deadline: t.deadline, pengisi: t.pengisi, dibuat: t.dibuat, diubah: t.diubah,
+      id: t.id, semester: t.semester, matkul: t.matkul, kelas: t.kelas, hari: h,
+      status: t.status, deskripsi: t.deskripsi, tanggal: h ? classDate_(w, h, cfg) : t.tanggal, pengisi: t.pengisi, dibuat: t.dibuat, diubah: t.diubah,
     };
   }).sort(function (a, b) {
     return a.semester - b.semester || CONFIG.DAYS.indexOf(a.hari) - CONFIG.DAYS.indexOf(b.hari) ||
@@ -480,12 +495,11 @@ function adminHistory(token, id) {
 function adminUpdateTask(token, id, changes) {
   const s = session_(token, "admin");
   const deskripsi = field_(changes && changes.deskripsi, "Deskripsi tugas", 160, true);
-  const deadline = isoDate_(changes && changes.deadline, "Deadline");
   return locked_(function () {
     const sheet = sheetByName_(SHEETS.tugas.name);
     const row = readTugas_(sheet).find(function (t) { return t.id === String(id); });
     if (!row || row.status !== STATUS.ada) throw new Error("Hanya tugas aktif yang bisa diedit.");
-    updateRow_(sheet, row, { deskripsi: deskripsi, deadline: deadline, pengisi: adminName_(s), diubah: new Date().toISOString() }, "edit-admin");
+    updateRow_(sheet, row, { deskripsi: deskripsi, pengisi: adminName_(s), diubah: new Date().toISOString() }, "edit-admin");
     bumpVersion_();
     return { id: row.id };
   });
@@ -549,7 +563,7 @@ function adminSettings(token) {
   return {
     accepting: cfg.accepting, term: cfg.term, semesterStart: cfg.semesterStart, totalWeeks: cfg.totalWeeks,
     currentWeek: weekNumber_(todayIso_(), cfg),
-    adminEmails: cfg.adminEmails, designEmails: cfg.designEmails,
+    accounts: s.role === "admin" ? accounts_() : [], designEmails: cfg.designEmails,
     spreadsheetUrl: s.role === "admin" ? cfg.book.getUrl() : "",
     matkul: readMatkul_(cfg).map(function (m) { return { semester: m.semester, hari: m.hari, matkul: m.matkul, kelas: m.kelas }; }),
   };
@@ -569,10 +583,11 @@ function getExportData(token, week) {
   matkul.forEach(function (m) { hari[slotKey_(m.semester, m.matkul, m.kelas)] = m.hari; });
   const all = readTugas_().filter(function (t) { return t.minggu === w; });
   const tasks = all.filter(function (t) { return t.status === STATUS.ada; }).map(function (t) {
-    return { semester: t.semester, hari: hari[slotKey_(t.semester, t.matkul, t.kelas)] || "", matkul: t.matkul, kelas: t.kelas, deskripsi: t.deskripsi, deadline: t.deadline };
+    const h = hari[slotKey_(t.semester, t.matkul, t.kelas)] || "";
+    return { semester: t.semester, hari: h, matkul: t.matkul, kelas: t.kelas, deskripsi: t.deskripsi, tanggal: h ? classDate_(w, h, cfg) : t.tanggal, dibuat: t.dibuat };
   }).sort(function (a, b) {
     return a.semester - b.semester || CONFIG.DAYS.indexOf(a.hari) - CONFIG.DAYS.indexOf(b.hari) ||
-      a.matkul.localeCompare(b.matkul, "id") || a.kelas.localeCompare(b.kelas) || (a.deadline < b.deadline ? -1 : 1);
+      a.matkul.localeCompare(b.matkul, "id") || a.kelas.localeCompare(b.kelas) || (a.dibuat < b.dibuat ? -1 : 1);
   });
   const last = lastExport_(w);
   const range = cycleRange_(w, cfg);
@@ -696,25 +711,14 @@ function session_(token, needRole) {
     if (raw) p.deleteProperty(key);
     throw new Error("SESI_HABIS: Sesi berakhir. Silakan masuk lagi.");
   }
-  const role = roleOf_(data.email, loadConfig_()); // Email dicabut dari Config = akses langsung hilang.
-  if (!role) { p.deleteProperty(key); throw new Error("SESI_HABIS: Email ini tidak lagi terdaftar."); }
-  if (needRole === "admin" && role !== "admin") throw new Error("Hanya admin WRY yang bisa melakukan ini.");
-  return { email: data.email, role: role };
-}
-function roleOf_(email, cfg) {
-  if (cfg.adminEmails.indexOf(email) >= 0) return "admin";
-  if (cfg.designEmails.indexOf(email) >= 0) return "design";
-  return "";
-}
-function email_(value) {
-  const s = String(value || "").trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) || s.length > 120) throw new Error("Tulis alamat email yang valid.");
-  return s;
-}
-function otpCode_() {
-  // 6 digit dari UUID acak (Math.random tidak dipakai untuk kode keamanan).
-  const hex = Utilities.getUuid().replace(/-/g, "").slice(0, 12);
-  return String(parseInt(hex, 16) % 1000000).padStart(6, "0");
+  // Akun dinonaktifkan / password atau peran diubah di tab Akun = sesi langsung gugur.
+  const account = account_(data.email);
+  if (!account || account.password === undefined || fingerprint_(account) !== data.fp) {
+    p.deleteProperty(key);
+    throw new Error("SESI_HABIS: Akun berubah atau dinonaktifkan. Silakan masuk lagi.");
+  }
+  if (needRole === "admin" && account.role !== "admin") throw new Error("Hanya admin WRY yang bisa melakukan ini.");
+  return { email: data.email, role: account.role };
 }
 function adminName_(s) {
   return "Admin (" + s.email + ")";
@@ -759,10 +763,11 @@ function cycleRange_(week, cfg) {
   const start = firstCycleDay_(cfg) + 7 * (week - 1);
   return { start: isoFromDay_(start), end: isoFromDay_(start + 6) };
 }
-function defaultDeadline_(week, hari, cfg) {
+/** Tanggal tugas diberikan: hari kuliah kelas di minggu WRY itu (Sabtu–Jumat, jadi Senin = awal minggu + 2). */
+function classDate_(week, hari, cfg) {
   const index = CONFIG.DAYS.indexOf(hari);
   if (index < 0) throw new Error("Hari kuliah tidak valid.");
-  return isoFromDay_(firstCycleDay_(cfg) + 7 * week + 2 + index); // Senin setelah Jumat penutupan + offset hari.
+  return isoFromDay_(firstCycleDay_(cfg) + 7 * (week - 1) + 2 + index);
 }
 function clampWeek_(week, cfg) {
   const w = Number(week);
@@ -800,7 +805,6 @@ function loadConfig_() {
     accepting: accepting,
     assetBase: String(map.ASSET_BASE || "").replace(/\/+$/, ""),
     title: map.APP_TITLE || CONFIG.TITLE,
-    adminEmails: list_(map.ADMIN_EMAILS),
     designEmails: list_(map.DESIGN_EMAILS),
   };
 }
@@ -827,7 +831,7 @@ function readTugas_(sheet) {
   return s.getRange(2, 1, last - 1, SHEETS.tugas.header.length).getDisplayValues().map(function (r, i) {
     return {
       row: i + 2, id: r[0], minggu: Number(r[1]), semester: Number(r[2]), matkul: r[3], kelas: r[4],
-      status: r[5], deskripsi: r[6], deadline: r[7], pengisi: r[8], dibuat: r[9], diubah: r[10],
+      status: r[5], deskripsi: r[6], tanggal: r[7], pengisi: r[8], dibuat: r[9], diubah: r[10],
     };
   }).filter(function (t) { return t.id; });
 }
@@ -841,13 +845,13 @@ function findSlot_(cfg, semester, matkul, kelas) {
 }
 
 function publicTask_(t) {
-  return { id: t.id, deskripsi: t.deskripsi, deadline: t.deadline, pengisi: t.pengisi, diubah: t.diubah || t.dibuat };
+  return { id: t.id, deskripsi: t.deskripsi, tanggal: t.tanggal, pengisi: t.pengisi, diubah: t.diubah || t.dibuat };
 }
 
-function appendTask_(sheet, week, slot, status, deskripsi, deadline, pengisi, now) {
+function appendTask_(sheet, week, slot, status, deskripsi, tanggal, pengisi, now) {
   const id = "T" + Utilities.formatDate(new Date(), CONFIG.TZ, "yyMMdd") + "-" + Utilities.getUuid().slice(0, 6).toUpperCase();
-  sheet.appendRow([id, String(week), String(slot.semester), slot.matkul, slot.kelas, status, safeCell_(deskripsi), deadline, safeCell_(pengisi), now, now]);
-  log_(id, status === STATUS.ada ? "tambah" : "tidak-ada-tugas", pengisi, "", JSON.stringify({ minggu: week, matkul: slot.matkul, kelas: slot.kelas, deskripsi: deskripsi, deadline: deadline }));
+  sheet.appendRow([id, String(week), String(slot.semester), slot.matkul, slot.kelas, status, safeCell_(deskripsi), tanggal, safeCell_(pengisi), now, now]);
+  log_(id, status === STATUS.ada ? "tambah" : "tidak-ada-tugas", pengisi, "", JSON.stringify({ minggu: week, matkul: slot.matkul, kelas: slot.kelas, deskripsi: deskripsi, tanggal: tanggal }));
   return id;
 }
 
@@ -855,9 +859,9 @@ function updateRow_(sheet, old, changes, action) {
   const next = Object.assign({}, old, changes);
   sheet.getRange(old.row, 2, 1, 10).setValues([[
     String(next.minggu), String(next.semester), next.matkul, next.kelas, next.status,
-    safeCell_(next.deskripsi), next.deadline, safeCell_(next.pengisi), next.dibuat, next.diubah,
+    safeCell_(next.deskripsi), next.tanggal, safeCell_(next.pengisi), next.dibuat, next.diubah,
   ]]);
-  const pick = function (t) { return JSON.stringify({ minggu: t.minggu, status: t.status, deskripsi: t.deskripsi, deadline: t.deadline }); };
+  const pick = function (t) { return JSON.stringify({ minggu: t.minggu, status: t.status, deskripsi: t.deskripsi, tanggal: t.tanggal }); };
   log_(old.id, action, next.pengisi, pick(old), pick(next));
 }
 

@@ -15,7 +15,7 @@
   const today = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
   const first = dayNum(SEMESTER_START) - 2;
   const weekOf = (iso) => Math.min(Math.max(Math.floor((dayNum(iso) - first) / 7) + 1, 1), TOTAL_WEEKS);
-  const deadline = (week, hari) => isoOf(first + 7 * week + 2 + DAYS.indexOf(hari));
+  const classDate = (week, hari) => isoOf(first + 7 * (week - 1) + 2 + DAYS.indexOf(hari));
   const current = () => weekOf(today());
 
   const SAMPLE = [
@@ -55,17 +55,17 @@
         for (let k = 0; k < n; k++) list.push(Object.assign({}, base, {
           id: "T" + nextId++, status: "ada", pengisi: NAMES[i % NAMES.length],
           deskripsi: SAMPLE[Math.floor(rand(i * 7 + k + week) * SAMPLE.length)],
-          deadline: k ? deadline(week, DAYS[Math.min(4, DAYS.indexOf(m.hari) + 2)]) : deadline(week, m.hari),
+          tanggal: classDate(week, m.hari),
         }));
       } else if (r < 0.58) {
-        list.push(Object.assign({}, base, { id: "T" + nextId++, status: "tidak-ada", pengisi: NAMES[(i + 2) % NAMES.length], deskripsi: "", deadline: "" }));
+        list.push(Object.assign({}, base, { id: "T" + nextId++, status: "tidak-ada", pengisi: NAMES[(i + 2) % NAMES.length], deskripsi: "", tanggal: "" }));
       }
     });
     store.set(week, list);
     return list;
   }
   const slotKey = (s, m, k) => [Number(s), m, k].join("|");
-  const pub = (t) => ({ id: t.id, deskripsi: t.deskripsi, deadline: t.deadline, pengisi: t.pengisi, diubah: t.diubah });
+  const pub = (t) => ({ id: t.id, deskripsi: t.deskripsi, tanggal: t.tanggal, pengisi: t.pengisi, diubah: t.diubah });
 
   async function getBoard(week) {
     const cur = current();
@@ -79,7 +79,7 @@
       let g = sem.matkul.find((x) => x.name === m.matkul);
       if (!g) sem.matkul.push(g = { name: m.matkul, classes: [] });
       const items = active.filter((t) => slotKey(t.semester, t.matkul, t.kelas) === slotKey(m.semester, m.matkul, m.kelas));
-      const tasks = items.filter((t) => t.status === "ada").sort((a, b) => a.deadline.localeCompare(b.deadline)).map(pub);
+      const tasks = items.filter((t) => t.status === "ada").sort((a, b) => a.dibuat.localeCompare(b.dibuat)).map(pub);
       const none = items.find((t) => t.status === "tidak-ada");
       g.classes.push({
         kelas: m.kelas, hari: m.hari, status: tasks.length ? "ada" : none ? "tidak-ada" : "kosong", tasks,
@@ -117,9 +117,11 @@
     const inSlot = list.filter((t) => t.status !== "dihapus" && slotKey(t.semester, t.matkul, t.kelas) === slotKey(p.semester, p.matkul, p.kelas));
     const base = { minggu: week, semester: Number(p.semester), matkul: p.matkul, kelas: p.kelas, dibuat: now, diubah: now, pengisi: (p.pengisi || "").trim() || "Kontributor Kelas" };
     const ids = [];
+    const slot = (await matkul()).find((m) => slotKey(m.semester, m.matkul, m.kelas) === slotKey(p.semester, p.matkul, p.kelas));
+    const tanggal = classDate(week, slot.hari);
     if (p.mode === "tidak-ada") {
       if (inSlot.some((t) => t.status === "ada")) throw new Error("Kelas ini masih punya tugas aktif. Hapus tugasnya dulu bila memang tidak ada tugas.");
-      if (!inSlot.length) { const r = Object.assign({}, base, { id: "T" + nextId++, status: "tidak-ada", deskripsi: "", deadline: "" }); list.push(r); ids.push(r.id); }
+      if (!inSlot.length) { const r = Object.assign({}, base, { id: "T" + nextId++, status: "tidak-ada", deskripsi: "", tanggal: "" }); list.push(r); ids.push(r.id); }
       else ids.push(inSlot[0].id);
     } else {
       inSlot.filter((t) => t.status === "tidak-ada").forEach((t) => { t.status = "dihapus"; });
@@ -127,10 +129,10 @@
         if (t.id) {
           const old = list.find((x) => x.id === t.id);
           if (!old || old.status === "dihapus") throw new Error("Tugas yang diedit tidak ditemukan. Muat ulang halaman.");
-          Object.assign(old, { deskripsi: t.deskripsi.trim(), deadline: t.deadline, pengisi: base.pengisi, diubah: now });
+          Object.assign(old, { deskripsi: t.deskripsi.trim(), tanggal, pengisi: base.pengisi, diubah: now });
           ids.push(old.id);
         } else {
-          const r = Object.assign({}, base, { id: "T" + nextId++, status: "ada", deskripsi: t.deskripsi.trim(), deadline: t.deadline });
+          const r = Object.assign({}, base, { id: "T" + nextId++, status: "ada", deskripsi: t.deskripsi.trim(), tanggal });
           list.push(r); ids.push(r.id);
         }
       });
@@ -147,8 +149,13 @@
   }
 
   // ───── Backoffice (mock) ─────
-  // Email dev: admin.wry@example.com (admin) / design.wry@example.com (tim design). Kode OTP: 123456.
-  const ROLES = { "admin.wry@example.com": "admin", "design.wry@example.com": "design" };
+  // Akun dev (meniru tab Akun): admin@wry.test / wry-admin, design@wry.test / wry-design.
+  const ACCOUNTS = [
+    { email: "admin@wry.test", password: "wry-admin", role: "admin", active: true },
+    { email: "design@wry.test", password: "wry-design", role: "design", active: true },
+    { email: "alumni@wry.test", password: "x", role: "design", active: false },
+  ];
+  const ROLES = Object.fromEntries(ACCOUNTS.filter((a) => a.active).map((a) => [a.email, a.role]));
   const settings = { accepting: true };
   const history = new Map();
   /** Entri pertama "tambah" dibuat dari isi asli baris sebelum perubahan pertama. */
@@ -156,7 +163,7 @@
     if (!history.has(row.id)) history.set(row.id, [{ waktu: row.dibuat, aksi: before.deskripsi ? "tambah" : "tidak-ada-tugas", pengisi: before.pengisi, sebelum: null, sesudah: snap(before) }]);
     history.get(row.id).push({ waktu: new Date().toISOString(), aksi, pengisi: row.pengisi, sebelum: snap(before), sesudah: snap(row) });
   };
-  const snap = (t) => ({ minggu: t.minggu, status: t.status, deskripsi: t.deskripsi, deadline: t.deadline });
+  const snap = (t) => ({ minggu: t.minggu, status: t.status, deskripsi: t.deskripsi, tanggal: t.tanggal });
   function session(token, needAdmin) {
     const email = String(token || "").split("|")[1];
     const role = ROLES[email];
@@ -169,14 +176,13 @@
     throw new Error("Tugas tidak ditemukan.");
   }
 
-  async function requestOtp(email) {
-    console.info("[mock] Kode OTP untuk " + email + ": 123456");
-    return { sent: true, message: "Kalau email ini terdaftar, kode masuk sudah dikirim. (Dev: pakai 123456)" };
-  }
-  async function verifyOtp(email, code) {
-    const role = ROLES[String(email).toLowerCase()];
-    if (code !== "123456" || !role) throw new Error("Kode salah. Sisa 4 percobaan.");
-    return { token: "mock|" + email.toLowerCase(), email: email.toLowerCase(), role, expires: Date.now() + 7 * 864e5 };
+  let fails = 0;
+  async function adminLogin(email, password) {
+    if (fails >= 5) throw new Error("Terlalu banyak percobaan. Coba lagi 15 menit lagi.");
+    const acc = ACCOUNTS.find((a) => a.active && a.email === String(email).trim().toLowerCase());
+    if (!acc || acc.password !== password) { fails++; throw new Error("Email atau password salah."); }
+    fails = 0;
+    return { token: "mock|" + acc.email, email: acc.email, role: acc.role, expires: Date.now() + 7 * 864e5 };
   }
   async function adminSession(token) { const s = session(token); return { email: s.email, role: s.role, canEdit: s.role === "admin" }; }
   async function adminLogout() { return { ok: true }; }
@@ -217,7 +223,7 @@
     const s = session(token, true);
     const { row } = await findRow(id);
     const before = Object.assign({}, row);
-    Object.assign(row, { deskripsi: changes.deskripsi, deadline: changes.deadline, pengisi: "Admin (" + s.email + ")", diubah: new Date().toISOString() });
+    Object.assign(row, { deskripsi: changes.deskripsi, pengisi: "Admin (" + s.email + ")", diubah: new Date().toISOString() });
     logH(row, before, "edit-admin");
     return { id };
   }
@@ -247,7 +253,7 @@
     const s = session(token);
     return {
       accepting: settings.accepting, term: "Ganjil", semesterStart: SEMESTER_START, totalWeeks: TOTAL_WEEKS, currentWeek: current(),
-      adminEmails: ["admin.wry@example.com", "ketua.wry@example.com"], designEmails: ["design.wry@example.com"],
+      accounts: s.role === "admin" ? ACCOUNTS.map(({ email, role, active }) => ({ email, role, active })) : [], designEmails: ["design.wry@example.com"],
       spreadsheetUrl: s.role === "admin" ? "https://docs.google.com/spreadsheets/" : "",
       matkul: await matkul(),
     };
@@ -262,7 +268,7 @@
     const ms = await matkul();
     const hariOf = (t) => (ms.find((m) => slotKey(m.semester, m.matkul, m.kelas) === slotKey(t.semester, t.matkul, t.kelas)) || {}).hari || "";
     const all = await rows(w);
-    const tasks = all.filter((t) => t.status === "ada").map((t) => ({ semester: t.semester, hari: hariOf(t), matkul: t.matkul, kelas: t.kelas, deskripsi: t.deskripsi, deadline: t.deadline }))
+    const tasks = all.filter((t) => t.status === "ada").map((t) => ({ semester: t.semester, hari: hariOf(t), matkul: t.matkul, kelas: t.kelas, deskripsi: t.deskripsi, tanggal: t.tanggal }))
       .sort((a, b) => a.semester - b.semester || DAYS.indexOf(a.hari) - DAYS.indexOf(b.hari) || a.matkul.localeCompare(b.matkul) || a.kelas.localeCompare(b.kelas));
     const last = exportsLog.filter((e) => e.week === w).pop() || null;
     const start = first + 7 * (w - 1);
@@ -290,7 +296,7 @@
   const api = {
     getExportData, beginExport, uploadExportSlide, finishExport,
     getBoard, getFormOptions, checkExisting, saveTasks, deleteTask,
-    requestOtp, verifyOtp, adminSession, adminLogout, adminStatus, adminTasks, adminHistory,
+    adminLogin, adminSession, adminLogout, adminStatus, adminTasks, adminHistory,
     adminUpdateTask, adminDeleteTask, adminRestoreTask, adminSetAccepting, adminSettings,
   };
   function runner(success, failure) {

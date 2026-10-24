@@ -55,7 +55,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-socketserver.TCPServer.allow_reuse_address = True
-with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
+# Threading: satu koneksi browser yang menggantung tidak menahan permintaan lain.
+socketserver.ThreadingTCPServer.allow_reuse_address = True
+socketserver.ThreadingTCPServer.daemon_threads = True
+with socketserver.ThreadingTCPServer(("127.0.0.1", PORT), Handler) as httpd:
     print(f"WRY dev: http://127.0.0.1:{PORT}")
     httpd.serve_forever()
