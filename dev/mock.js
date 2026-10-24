@@ -1,5 +1,5 @@
 /**
- * Mock google.script.run untuk pratinjau lokal. Meniru API di gas/Code.gs dengan
+ * Mock API Apps Script untuk pratinjau lokal. Meniru API di gas/Code.gs dengan
  * data matkul dari data/matkul-ganjil.csv dan tugas contoh yang disimpan di memori
  * (hilang saat halaman dimuat ulang).
  * Tambahkan ?mock=error atau ?mock=slow di URL untuk menguji state gagal/lambat.
@@ -299,23 +299,16 @@
     adminLogin, adminSession, adminLogout, adminStatus, adminTasks, adminHistory,
     adminUpdateTask, adminDeleteTask, adminRestoreTask, adminSetAccepting, adminSettings,
   };
-  function runner(success, failure) {
-    return new Proxy({}, {
-      get(_, name) {
-        if (name === "withSuccessHandler") return (fn) => runner(fn, failure);
-        if (name === "withFailureHandler") return (fn) => runner(success, fn);
-        return (...args) => {
-          const delay = mode === "slow" ? 2500 : 450;
-          setTimeout(async () => {
-            try {
-              if (mode === "error") throw new Error("Mock: server tidak merespons");
-              if (!api[name]) throw new Error("Mock belum ada untuk " + name);
-              success && success(await api[name](...JSON.parse(JSON.stringify(args))));
-            } catch (e) { failure && failure(e); }
-          }, delay);
-        };
-      },
-    });
-  }
-  window.google = { script: { run: runner() } };
+  /** Dipakai web/api.js: semua panggilan dilayani mock dengan jeda seperti server sungguhan. */
+  window.WRY_MOCK = {
+    call(name, args) {
+      return new Promise((resolve, reject) => setTimeout(async () => {
+        try {
+          if (mode === "error") throw new Error("Mock: server tidak merespons");
+          if (!api[name]) throw new Error("Mock belum ada untuk " + name);
+          resolve(await api[name](...JSON.parse(JSON.stringify(args))));
+        } catch (e) { reject(e); }
+      }, mode === "slow" ? 2500 : 450));
+    },
+  };
 })();

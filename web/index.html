@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <base target="_top">
   <meta charset="utf-8">
   <title>We Remind You!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-  <script type="application/json" id="boot"><?!= boot ?></script>
+  <script src="/config.js"></script>
+  <script src="/api.js"></script>
   <style>
     :root {
       --ink: #1d1d1b;
@@ -741,10 +741,7 @@
       const DAYS_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
       const STORE_KEY = "wry.semester";
 
-      let boot = {};
-      try { boot = JSON.parse(document.getElementById("boot").textContent); } catch (_) { boot = {}; }
-      const assetBase = (boot.assetBase || "").replace(/\/+$/, "");
-      const asset = (name) => assetBase + "/" + name;
+      const asset = (name) => "/assets/" + name;
 
       const $ = (id) => document.getElementById(id);
       const el = (tag, attrs, children) => {
@@ -770,34 +767,21 @@
       mobile.addEventListener("change", setHeroImage);
       document.querySelectorAll("img[data-asset]").forEach((img) => { img.src = asset(img.dataset.asset); });
 
-      // ───── Server (google.script.run dibungkus Promise) ─────
-      function call(fn, ...args) {
-        return new Promise((resolve, reject) => {
-          google.script.run.withSuccessHandler(resolve).withFailureHandler((e) => reject(e instanceof Error ? e : new Error(String(e && e.message || e))))[fn](...args);
-        });
-      }
+      // ───── Server (API Apps Script, lihat api.js) ─────
+      const call = (fn, ...args) => WRY_API.call(fn, args);
 
-      // ───── Navigasi: google.script.history di GAS, URL biasa saat dev ─────
-      const gasHistory = window.google && google.script && google.script.history && google.script.url;
+      // ───── Navigasi: ?week=N & #unggah di URL ─────
       const Nav = {
         read() {
-          return new Promise((resolve) => {
-            if (gasHistory) google.script.url.getLocation((loc) => resolve(fromLocation(loc.parameter || {}, loc.hash || "")));
-            else resolve(fromLocation(Object.fromEntries(new URLSearchParams(location.search)), location.hash.slice(1)));
-          });
+          return Promise.resolve(fromLocation(Object.fromEntries(new URLSearchParams(location.search)), location.hash.slice(1)));
         },
         push(state, replace) {
-          const params = state.week ? { week: String(state.week) } : {};
           const hash = state.view === "unggah" ? "unggah" : "";
-          if (gasHistory) (replace ? google.script.history.replace : google.script.history.push)(state, params, hash);
-          else {
-            const url = location.pathname + (state.week ? "?week=" + state.week : "") + (hash ? "#" + hash : "");
-            history[replace ? "replaceState" : "pushState"](state, "", url);
-          }
+          const url = location.pathname + (state.week ? "?week=" + state.week : "") + (hash ? "#" + hash : "");
+          history[replace ? "replaceState" : "pushState"](state, "", url);
         },
         onChange(fn) {
-          if (gasHistory) google.script.history.setChangeHandler((e) => fn(fromLocation((e.location && e.location.parameter) || {}, (e.location && e.location.hash) || "")));
-          else window.addEventListener("popstate", () => Nav.read().then(fn));
+          window.addEventListener("popstate", () => Nav.read().then(fn));
         },
       };
       function fromLocation(params, hash) {
@@ -1782,11 +1766,10 @@
       $("uploadBtn").addEventListener("click", (e) => { e.preventDefault(); go({ week: state.week, view: "unggah" }); });
       $("backToBoard").addEventListener("click", () => go({ week: state.week, view: "board" }));
 
-      if (boot.ready === false) {
+      if (!WRY_API.ready) {
         renderError("Sistem belum disiapkan admin. Silakan coba lagi nanti.", () => location.reload());
         return;
       }
-      if (boot.initialWeek) $("heroWeek").textContent = boot.initialWeek; // Angka tampil sebelum data datang.
       Nav.onChange(apply);
       Nav.read().then(apply);
     })();

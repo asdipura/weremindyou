@@ -1,36 +1,40 @@
-"""Server pratinjau lokal untuk gas/Index.html (tanpa deploy GAS).
+"""Server pratinjau lokal untuk web/ (frontend Cloudflare Pages) tanpa deploy.
 
-- "/" menyajikan gas/Index.html dengan scriptlet <?!= boot ?> diisi data dev
-  dan dev/mock.js disisipkan sebagai pengganti google.script.run.
-- Path lain disajikan statis dari root project (assets/, data/, dev/).
+- "/" dan "/admin" menyajikan web/index.html & web/admin.html (meniru pretty URL Pages)
+  dengan dev/mock.js disisipkan, jadi semua panggilan API dilayani mock.
+  Tambahkan ?api=real untuk memakai apiUrl di web/config.js (Apps Script sungguhan).
+- Path lain disajikan statis dari web/; /dev/ dan /data/ dari root project.
 Jalankan: python dev/serve.py  →  http://127.0.0.1:5173
 """
 import http.server
-import json
 import pathlib
 import socketserver
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+WEB = ROOT / "web"
 PORT = 5173
+PAGES = {"/": "index.html", "/index.html": "index.html", "/admin": "admin.html", "/admin/": "admin.html", "/admin.html": "admin.html"}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT), **kwargs)
+        super().__init__(*args, directory=str(WEB), **kwargs)
+
+    def translate_path(self, path):
+        clean = path.split("?", 1)[0].split("#", 1)[0]
+        if clean.startswith(("/dev/", "/data/")):
+            return str(ROOT / clean.lstrip("/"))
+        return super().translate_path(path)
 
     def do_GET(self):
         path, _, query = self.path.split("#", 1)[0].partition("?")
-        if path in ("/", "/index.html"):
-            admin = "page=admin" in query.split("&")
-            html = (ROOT / "gas" / ("Admin.html" if admin else "Index.html")).read_text(encoding="utf-8")
-            boot = json.dumps({"assetBase": "/assets", "title": "WRY (dev)", "ready": True,
-                               "publicUrl": f"http://127.0.0.1:{PORT}/"})
-            html = html.replace("<?!= boot ?>", boot.replace("<", "\\u003c"))
-            html = html.replace("</head>", '<script src="/dev/mock.js"></script>\n</head>', 1)
+        if path in PAGES:
+            html = (WEB / PAGES[path]).read_text(encoding="utf-8")
+            if "api=real" not in query.split("&"):
+                html = html.replace("</head>", '<script src="/dev/mock.js"></script>\n</head>', 1)
             body = html.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)

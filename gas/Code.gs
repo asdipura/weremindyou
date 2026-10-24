@@ -1,8 +1,8 @@
 /**
  * We Remind You (WRY) · HIMA IDE ITS
- * Files: Code.gs + Index.html (+ Admin.html di batch 4).
+ * Backend API (doPost JSON) untuk frontend di Cloudflare Pages (folder web/).
  * Buat dari Spreadsheet → Extensions → Apps Script, lalu jalankan setupSheet() sekali.
- * Helper privat diakhiri '_' supaya tidak bisa dipanggil lewat google.script.run.
+ * Hanya fungsi di API_ yang bisa dipanggil frontend; helper privat diakhiri '_'.
  */
 const CONFIG = Object.freeze({
   TITLE: "We Remind You! — HIMA IDE ITS",
@@ -107,35 +107,45 @@ const MATKUL_SEED = [
 
 // ───────────────────────── Web app ─────────────────────────
 
+// Frontend (papan publik & /admin) di-host di Cloudflare Pages; Apps Script hanya API JSON.
+
+/** URL lama web app: arahkan ke frontend Cloudflare (Config PUBLIC_URL). */
 function doGet(e) {
-  const page = e && e.parameter && e.parameter.page;
-  if (page === "admin") {
-    let adminBoot = { assetBase: "", publicUrl: ScriptApp.getService().getUrl(), ready: false };
-    try {
-      const cfg = loadConfig_();
-      adminBoot = { assetBase: cfg.assetBase, publicUrl: adminBoot.publicUrl, ready: true };
-    } catch (error) {
-      console.warn("Config belum siap: " + error.message);
-    }
-    const admin = HtmlService.createTemplateFromFile("Admin");
-    admin.boot = JSON.stringify(adminBoot).replace(/</g, "\\u003c");
-    return admin.evaluate()
-      .setTitle("WRY Backoffice")
-      .addMetaTag("viewport", "width=device-width, initial-scale=1");
-  }
-  let boot = { assetBase: "", title: CONFIG.TITLE, ready: false };
+  let url = "";
+  try { url = loadConfig_().publicUrl; } catch (error) { console.warn("Config belum siap: " + error.message); }
+  if (url && e && e.parameter && e.parameter.page === "admin") url += "/admin";
+  const safe = url.replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; });
+  const html = url
+    ? '<p style="font:16px system-ui;margin:40px">We Remind You! sudah pindah ke <a href="' + safe + '" target="_top">' + safe + "</a>.</p>"
+    : '<p style="font:16px system-ui;margin:40px">PUBLIC_URL belum diisi di tab Config.</p>';
+  return HtmlService.createHtmlOutput(html).setTitle(CONFIG.TITLE).addMetaTag("viewport", "width=device-width, initial-scale=1");
+}
+
+/** Fungsi yang boleh dipanggil frontend. Fungsi berakhiran _ tidak pernah terbuka. */
+const API_ = {
+  getBoard: getBoard, getFormOptions: getFormOptions, checkExisting: checkExisting, saveTasks: saveTasks, deleteTask: deleteTask,
+  adminLogin: adminLogin, adminSession: adminSession, adminLogout: adminLogout, adminStatus: adminStatus, adminTasks: adminTasks,
+  adminHistory: adminHistory, adminUpdateTask: adminUpdateTask, adminDeleteTask: adminDeleteTask, adminRestoreTask: adminRestoreTask,
+  adminSetAccepting: adminSetAccepting, adminSettings: adminSettings,
+  getExportData: getExportData, beginExport: beginExport, uploadExportSlide: uploadExportSlide, finishExport: finishExport,
+};
+
+/**
+ * API JSON untuk frontend Cloudflare. Body (text/plain agar tanpa preflight CORS): {"fn": "...", "args": [...]}.
+ * Balasan: {"ok": true, "data": ...} atau {"ok": false, "error": "pesan"}.
+ */
+function doPost(e) {
+  let out;
   try {
-    const cfg = loadConfig_();
-    boot = { assetBase: cfg.assetBase, title: cfg.title, ready: true, initialWeek: weekNumber_(todayIso_(), cfg) };
+    const body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+    const fn = Object.prototype.hasOwnProperty.call(API_, body.fn) ? API_[body.fn] : null;
+    if (!fn) throw new Error("Fungsi tidak dikenal.");
+    const data = fn.apply(null, Array.isArray(body.args) ? body.args : []);
+    out = { ok: true, data: data === undefined ? null : data };
   } catch (error) {
-    console.warn("Config belum siap: " + error.message);
+    out = { ok: false, error: String((error && error.message) || error) };
   }
-  const template = HtmlService.createTemplateFromFile("Index");
-  // Disisipkan ke <script type="application/json">; '<' di-escape agar tidak menutup tag.
-  template.boot = JSON.stringify(boot).replace(/</g, "\\u003c");
-  return template.evaluate()
-    .setTitle(boot.title)
-    .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 
 // ───────────────────────── Setup admin ─────────────────────────
@@ -153,8 +163,7 @@ function setupSheet() {
       ["TOTAL_WEEKS", "16", "Jumlah minggu perkuliahan dalam semester (1–30)."],
       ["ACTIVE_TERM", "Ganjil", "Ganjil atau Genap. Menentukan semester yang tampil (1/3/5/7 atau 2/4/6/8)."],
       ["ACCEPT_SUBMISSIONS", "TRUE", "TRUE = form menerima tugas. FALSE = papan tetap tampil, form ditutup."],
-      ["ASSET_BASE", "https://cdn.jsdelivr.net/gh/asdipura/weremindyou@main/assets", "URL folder aset (tanpa / di akhir)."],
-      ["APP_TITLE", CONFIG.TITLE, "Judul tab browser."],
+      ["PUBLIC_URL", "https://weremindyou.pages.dev", "URL frontend Cloudflare Pages (tanpa / di akhir). Dipakai di caption & pengalihan URL lama."],
       ["DESIGN_EMAILS", "design.wry@example.com", "Penerima email ringkasan Jumat 23.59. Pisahkan dengan |. Akun login backoffice diatur di tab Akun."],
     ];
     const existing = new Set(config.getDataRange().getDisplayValues().slice(1).map(function (r) { return String(r[0]).trim(); }));
@@ -595,7 +604,7 @@ function getExportData(token, week) {
     week: w, currentWeek: current, maxWeek: Math.min(cfg.totalWeeks, current + 1), term: cfg.term, start: range.start, end: range.end,
     semesters: semestersOf_(cfg), tasks: tasks, lastExport: last,
     changedSince: last ? all.filter(function (t) { return t.diubah > last.waktu; }).length : 0,
-    publicUrl: ScriptApp.getService().getUrl(),
+    publicUrl: cfg.publicUrl,
   };
 }
 
@@ -803,8 +812,7 @@ function loadConfig_() {
     totalWeeks: totalWeeks,
     term: term,
     accepting: accepting,
-    assetBase: String(map.ASSET_BASE || "").replace(/\/+$/, ""),
-    title: map.APP_TITLE || CONFIG.TITLE,
+    publicUrl: String(map.PUBLIC_URL || "").replace(/\/+$/, ""),
     designEmails: list_(map.DESIGN_EMAILS),
   };
 }
